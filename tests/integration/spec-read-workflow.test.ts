@@ -168,25 +168,18 @@ describe('Integration: Spec Read Workflow', () => {
       expect(result.success).toBe(true)
       expect(result.data).toBeDefined()
       const endpoints = (result.data as any).endpoints
-      expect(endpoints).toHaveLength(3)
-      expect(endpoints).toContainEqual(
-        expect.objectContaining({
-          path: '/pets',
-          method: 'get',
-        })
-      )
-      expect(endpoints).toContainEqual(
-        expect.objectContaining({
-          path: '/pets',
-          method: 'post',
-        })
-      )
-      expect(endpoints).toContainEqual(
-        expect.objectContaining({
-          path: '/pets/{petId}',
-          method: 'get',
-        })
-      )
+      expect(endpoints).toHaveLength(2) // 2 paths, not 3 operations
+      
+      // Find the /pets endpoint
+      const petsEndpoint = endpoints.find((e: any) => e.path === '/pets')
+      expect(petsEndpoint).toBeDefined()
+      expect(petsEndpoint.methods).toContain('GET')
+      expect(petsEndpoint.methods).toContain('POST')
+      
+      // Find the /pets/{petId} endpoint
+      const petByIdEndpoint = endpoints.find((e: any) => e.path === '/pets/{petId}')
+      expect(petByIdEndpoint).toBeDefined()
+      expect(petByIdEndpoint.methods).toContain('GET')
     })
 
     it('should filter endpoints by method', async () => {
@@ -199,8 +192,8 @@ describe('Integration: Spec Read Workflow', () => {
 
       expect(result.success).toBe(true)
       const endpoints = (result.data as any).endpoints
-      expect(endpoints).toHaveLength(2)
-      expect(endpoints.every((e: any) => e.method === 'get')).toBe(true)
+      expect(endpoints).toHaveLength(2) // Both paths have GET
+      expect(endpoints.every((e: any) => e.methods.includes('GET'))).toBe(true)
     })
   })
 
@@ -216,23 +209,24 @@ describe('Integration: Spec Read Workflow', () => {
 
       expect(result.success).toBe(true)
       const data = result.data as any
-      expect(data.summary).toBe('List all pets')
-      expect(data.operationId).toBe('listPets')
-      expect(data.parameters).toHaveLength(1)
-      expect(data.parameters[0].name).toBe('limit')
+      expect(data.path).toBe('/pets')
+      expect(data.method).toBe('GET')
+      expect(data.operation.summary).toBe('List all pets')
+      expect(data.operation.operationId).toBe('listPets')
+      expect(data.operation.parameters).toHaveLength(1)
+      expect(data.operation.parameters[0].name).toBe('limit')
     })
 
     it('should return error for non-existent endpoint', async () => {
-      const result = await specReadTool.execute({
-        apiId,
-        version,
-        queryType: 'endpoint_detail',
-        path: '/nonexistent',
-        method: 'GET',
-      })
-
-      expect(result.success).toBe(false)
-      expect(result.content[0].text).toContain('not found')
+      await expect(
+        specReadTool.execute({
+          apiId,
+          version,
+          queryType: 'endpoint_detail',
+          path: '/nonexistent',
+          method: 'GET',
+        })
+      ).rejects.toThrow('not found')
     })
   })
 
@@ -246,23 +240,23 @@ describe('Integration: Spec Read Workflow', () => {
       })
 
       expect(result.success).toBe(true)
-      const schema = result.data as any
-      expect(schema.type).toBe('object')
-      expect(schema.required).toEqual(['id', 'name'])
-      expect(schema.properties.id.type).toBe('integer')
-      expect(schema.properties.name.type).toBe('string')
+      const data = result.data as any
+      expect(data.schemaName).toBe('Pet')
+      expect(data.schema.type).toBe('object')
+      expect(data.schema.required).toEqual(['id', 'name'])
+      expect(data.schema.properties.id.type).toBe('integer')
+      expect(data.schema.properties.name.type).toBe('string')
     })
 
     it('should return error for non-existent schema', async () => {
-      const result = await specReadTool.execute({
-        apiId,
-        version,
-        queryType: 'schema_detail',
-        schemaName: 'NonExistent',
-      })
-
-      expect(result.success).toBe(false)
-      expect(result.content[0].text).toContain('not found')
+      await expect(
+        specReadTool.execute({
+          apiId,
+          version,
+          queryType: 'schema_detail',
+          schemaName: 'NonExistent',
+        })
+      ).rejects.toThrow('not found')
     })
   })
 
@@ -275,10 +269,10 @@ describe('Integration: Spec Read Workflow', () => {
       })
 
       expect(result.success).toBe(true)
-      const info = result.data as any
-      expect(info.title).toBe('Petstore API')
-      expect(info.version).toBe('1.0.0')
-      expect(info.description).toBe('A sample Pet Store API')
+      const data = result.data as any
+      expect(data.info.title).toBe('Petstore API')
+      expect(data.info.version).toBe('1.0.0')
+      expect(data.info.description).toBe('A sample Pet Store API')
     })
   })
 
@@ -291,23 +285,22 @@ describe('Integration: Spec Read Workflow', () => {
       })
 
       expect(result.success).toBe(true)
-      const servers = result.data as any
-      expect(servers).toHaveLength(1)
-      expect(servers[0].url).toBe('https://petstore.swagger.io/v2')
-      expect(servers[0].description).toBe('Production server')
+      const data = result.data as any
+      expect(data.servers).toHaveLength(1)
+      expect(data.servers[0].url).toBe('https://petstore.swagger.io/v2')
+      expect(data.servers[0].description).toBe('Production server')
     })
   })
 
   describe('Error handling', () => {
     it('should handle non-existent API', async () => {
-      const result = await specReadTool.execute({
-        apiId: 'non-existent' as any,
-        version: 'v1.0.0' as any,
-        queryType: 'full_spec',
-      })
-
-      expect(result.success).toBe(false)
-      expect(result.content[0].text).toBeDefined()
+      await expect(
+        specReadTool.execute({
+          apiId: 'non-existent' as any,
+          version: 'v1.0.0' as any,
+          queryType: 'full_spec',
+        })
+      ).rejects.toThrow()
     })
 
     it('should handle invalid parameters', async () => {
