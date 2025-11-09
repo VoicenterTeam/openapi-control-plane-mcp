@@ -118,17 +118,18 @@ export class VersionControlTool extends BaseTool {
 
     const { apiId, version, sourceVersion, description, llmReason } = params
 
-    // Check if version already exists
-    const exists = await this.versionManager.versionExists(
-      apiId as ApiId,
-      version as VersionTag
-    )
-    if (exists) {
-      throw createToolError(
-        `Version ${version} already exists for ${apiId}`,
-        'VALIDATION_ERROR',
-        params as any
-      )
+    // Check if version already exists by getting API metadata
+    try {
+      const metadata = await this.versionManager.getApiMetadata(apiId as ApiId)
+      if (metadata.versions.includes(version as VersionTag)) {
+        throw createToolError(
+          `Version ${version} already exists for ${apiId}`,
+          'VALIDATION_ERROR',
+          params as any
+        )
+      }
+    } catch (error) {
+      // API doesn't exist yet, that's fine for first version
     }
 
     let spec: any
@@ -157,10 +158,35 @@ export class VersionControlTool extends BaseTool {
     await this.specManager.saveSpec(apiId as ApiId, version as VersionTag, spec)
 
     // Create version metadata
-    await this.versionManager.createVersion(
+    await this.versionManager.createVersionMetadata(
       apiId as ApiId,
       version as VersionTag,
-      description || `Version ${version}`
+      {
+        version: version as VersionTag,
+        created_at: new Date().toISOString(),
+        created_by: 'mcp-tool',
+        parent_version: (sourceVersion as VersionTag) || null,
+        description: description || `Version ${version}`,
+        changes: {
+          endpoints_added: [],
+          endpoints_modified: [],
+          endpoints_deleted: [],
+          schemas_added: [],
+          schemas_modified: [],
+          schemas_deleted: [],
+          breaking_changes: [],
+        },
+        validation: {
+          spectral_errors: 0,
+          spectral_warnings: 0,
+          openapi_valid: true,
+        },
+        stats: {
+          endpoint_count: 0,
+          schema_count: 0,
+          file_size_bytes: 0,
+        },
+      }
     )
 
     // Log audit event
@@ -258,12 +284,9 @@ export class VersionControlTool extends BaseTool {
 
     const { apiId, version, llmReason } = params
 
-    // Verify version exists
-    const exists = await this.versionManager.versionExists(
-      apiId as ApiId,
-      version as VersionTag
-    )
-    if (!exists) {
+    // Verify version exists by checking API metadata
+    const metadata = await this.versionManager.getApiMetadata(apiId as ApiId)
+    if (!metadata.versions.includes(version as VersionTag)) {
       throw createToolError(
         `Version ${version} does not exist for ${apiId}`,
         'VALIDATION_ERROR',
