@@ -13,9 +13,11 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { config } from './config'
 import { FileSystemStorage } from './storage/file-system-storage'
 import { SpecManager } from './services/spec-manager'
+import { ValidationService } from './services/validation-service'
 import { AuditLogger } from './services/audit-logger'
 import {
   SpecReadTool,
+  SpecValidateTool,
   MetadataUpdateTool,
   SchemaManageTool,
   EndpointManageTool,
@@ -42,6 +44,7 @@ export async function buildServer() {
 
   // Initialize services
   const specManager = new SpecManager(storage)
+  const validationService = new ValidationService(storage)
   const auditLogger = new AuditLogger(storage)
 
   // Initialize MCP server
@@ -59,11 +62,13 @@ export async function buildServer() {
 
   // Register tools
   const specReadTool = new SpecReadTool(specManager)
+  const specValidateTool = new SpecValidateTool(specManager, validationService)
   const metadataUpdateTool = new MetadataUpdateTool(specManager, auditLogger)
   const schemaManageTool = new SchemaManageTool(specManager, auditLogger)
   const endpointManageTool = new EndpointManageTool(specManager, auditLogger)
 
   const specReadDesc = specReadTool.describe()
+  const specValidateDesc = specValidateTool.describe()
   const metadataUpdateDesc = metadataUpdateTool.describe()
   const schemaManageDesc = schemaManageTool.describe()
   const endpointManageDesc = endpointManageTool.describe()
@@ -75,6 +80,11 @@ export async function buildServer() {
           name: specReadDesc.name,
           description: specReadDesc.description,
           inputSchema: specReadDesc.inputSchema,
+        },
+        {
+          name: specValidateDesc.name,
+          description: specValidateDesc.description,
+          inputSchema: specValidateDesc.inputSchema,
         },
         {
           name: metadataUpdateDesc.name,
@@ -102,6 +112,11 @@ export async function buildServer() {
 
     if (name === 'spec_read') {
       const result = await specReadTool.execute(args as any)
+      return result
+    }
+
+    if (name === 'spec_validate') {
+      const result = await specValidateTool.execute(args as any)
       return result
     }
 
@@ -138,7 +153,7 @@ export async function buildServer() {
     // For now, return a placeholder
     return {
       message: 'MCP server running - use MCP SDK for communication',
-      tools: ['spec_read', 'metadata_update', 'schema_manage', 'endpoint_manage'],
+      tools: ['spec_read', 'spec_validate', 'metadata_update', 'schema_manage', 'endpoint_manage'],
     }
   })
 
