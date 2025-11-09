@@ -14,7 +14,12 @@ import { config } from './config'
 import { FileSystemStorage } from './storage/file-system-storage'
 import { SpecManager } from './services/spec-manager'
 import { AuditLogger } from './services/audit-logger'
-import { SpecReadTool, MetadataUpdateTool, SchemaManageTool } from './tools'
+import {
+  SpecReadTool,
+  MetadataUpdateTool,
+  SchemaManageTool,
+  EndpointManageTool,
+} from './tools'
 import { logger } from './utils/logger'
 
 /**
@@ -56,10 +61,12 @@ export async function buildServer() {
   const specReadTool = new SpecReadTool(specManager)
   const metadataUpdateTool = new MetadataUpdateTool(specManager, auditLogger)
   const schemaManageTool = new SchemaManageTool(specManager, auditLogger)
-  
+  const endpointManageTool = new EndpointManageTool(specManager, auditLogger)
+
   const specReadDesc = specReadTool.describe()
   const metadataUpdateDesc = metadataUpdateTool.describe()
   const schemaManageDesc = schemaManageTool.describe()
+  const endpointManageDesc = endpointManageTool.describe()
 
   mcp.setRequestHandler('tools/list', async () => {
     return {
@@ -78,6 +85,11 @@ export async function buildServer() {
           name: schemaManageDesc.name,
           description: schemaManageDesc.description,
           inputSchema: schemaManageDesc.inputSchema,
+        },
+        {
+          name: endpointManageDesc.name,
+          description: endpointManageDesc.description,
+          inputSchema: endpointManageDesc.inputSchema,
         },
       ],
     }
@@ -103,6 +115,11 @@ export async function buildServer() {
       return result
     }
 
+    if (name === 'endpoint_manage') {
+      const result = await endpointManageTool.execute(args as any)
+      return result
+    }
+
     throw new Error(`Unknown tool: ${name}`)
   })
 
@@ -121,7 +138,7 @@ export async function buildServer() {
     // For now, return a placeholder
     return {
       message: 'MCP server running - use MCP SDK for communication',
-      tools: ['spec_read', 'metadata_update', 'schema_manage'],
+      tools: ['spec_read', 'metadata_update', 'schema_manage', 'endpoint_manage'],
     }
   })
 
