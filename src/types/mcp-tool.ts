@@ -8,6 +8,7 @@
  */
 
 import type { z } from 'zod'
+import { ZodError } from 'zod'
 
 /**
  * Result from a tool execution
@@ -23,6 +24,10 @@ export interface ToolResult {
   }>
   /** Whether this result represents an error */
   isError?: boolean
+  /** Success flag for easier testing */
+  success?: boolean
+  /** Optional data payload for easier access */
+  data?: unknown
 }
 
 /**
@@ -82,7 +87,7 @@ export abstract class BaseTool<TParams extends BaseToolParams = BaseToolParams> 
     try {
       return schema.parse(params)
     } catch (error) {
-      if (error instanceof z.ZodError) {
+      if (error instanceof ZodError) {
         throw new Error(`Validation failed: ${JSON.stringify(error.errors)}`)
       }
       throw error
@@ -105,7 +110,12 @@ export abstract class BaseTool<TParams extends BaseToolParams = BaseToolParams> 
         text: JSON.stringify(data, null, 2),
       })
     }
-    return { content, isError: false }
+    return { 
+      content, 
+      isError: false,
+      success: true,
+      data
+    }
   }
 
   /**
@@ -123,7 +133,12 @@ export abstract class BaseTool<TParams extends BaseToolParams = BaseToolParams> 
         text: JSON.stringify(details, null, 2),
       })
     }
-    return { content, isError: true }
+    return { 
+      content, 
+      isError: true,
+      success: false,
+      data: details
+    }
   }
 }
 

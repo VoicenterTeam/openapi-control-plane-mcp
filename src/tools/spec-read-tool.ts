@@ -85,7 +85,7 @@ export class SpecReadTool extends BaseTool<SpecReadParams> {
         case 'full_spec':
           return this.handleFullSpec(spec)
         case 'endpoints_list':
-          return this.handleEndpointsList(spec, validated.filters)
+          return this.handleEndpointsList(spec, validated.method, validated.filters)
         case 'endpoint_detail':
           return this.handleEndpointDetail(spec, validated.path!, validated.method)
         case 'schema_detail':
@@ -102,7 +102,7 @@ export class SpecReadTool extends BaseTool<SpecReadParams> {
       throw createToolError(
         (error as Error).message,
         'spec_read',
-        params,
+        params as any,
         error as Error
       )
     }
@@ -118,19 +118,24 @@ export class SpecReadTool extends BaseTool<SpecReadParams> {
   /**
    * Returns list of all endpoints
    */
-  private handleEndpointsList(spec: any, filters?: SpecReadParams['filters']): ToolResult {
+  private handleEndpointsList(spec: any, method?: string, filters?: SpecReadParams['filters']): ToolResult {
     const paths = spec.paths || {}
     let endpoints: Array<{ path: string; methods: string[] }> = []
 
     Object.keys(paths).forEach(path => {
-      const methods = Object.keys(paths[path]).filter(m => 
+      let methods = Object.keys(paths[path]).filter(m => 
         ['get', 'post', 'put', 'delete', 'patch', 'head', 'options'].includes(m.toLowerCase())
       )
       
+      // Filter by method if provided
+      if (method) {
+        methods = methods.filter(m => m.toUpperCase() === method.toUpperCase())
+      }
+      
       // Apply filters if provided
       if (filters) {
-        methods.forEach(method => {
-          const operation = paths[path][method]
+        methods.forEach(m => {
+          const operation = paths[path][m]
           let include = true
 
           if (filters.tags && operation.tags) {
@@ -144,14 +149,16 @@ export class SpecReadTool extends BaseTool<SpecReadParams> {
           if (include) {
             const existing = endpoints.find(e => e.path === path)
             if (existing) {
-              existing.methods.push(method.toUpperCase())
+              existing.methods.push(m.toUpperCase())
             } else {
-              endpoints.push({ path, methods: [method.toUpperCase()] })
+              endpoints.push({ path, methods: [m.toUpperCase()] })
             }
           }
         })
       } else {
-        endpoints.push({ path, methods: methods.map(m => m.toUpperCase()) })
+        if (methods.length > 0) {
+          endpoints.push({ path, methods: methods.map(m => m.toUpperCase()) })
+        }
       }
     })
 
