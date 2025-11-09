@@ -26,6 +26,8 @@ import {
   VersionControlTool,
   ParametersConfigureTool,
   ResponsesConfigureTool,
+  SecurityConfigureTool,
+  ReferencesManageTool,
 } from './tools'
 import { logger } from './utils/logger'
 
@@ -81,6 +83,8 @@ export async function buildServer() {
   )
   const parametersConfigureTool = new ParametersConfigureTool(specManager, auditLogger)
   const responsesConfigureTool = new ResponsesConfigureTool(specManager, auditLogger)
+  const securityConfigureTool = new SecurityConfigureTool(specManager, auditLogger)
+  const referencesManageTool = new ReferencesManageTool(specManager, auditLogger)
 
   const specReadDesc = specReadTool.describe()
   const specValidateDesc = specValidateTool.describe()
@@ -90,6 +94,8 @@ export async function buildServer() {
   const versionControlDesc = versionControlTool.describe()
   const parametersConfigureDesc = parametersConfigureTool.describe()
   const responsesConfigureDesc = responsesConfigureTool.describe()
+  const securityConfigureDesc = securityConfigureTool.describe()
+  const referencesManageDesc = referencesManageTool.describe()
 
   mcp.setRequestHandler('tools/list', async () => {
     return {
@@ -133,6 +139,16 @@ export async function buildServer() {
           name: responsesConfigureDesc.name,
           description: responsesConfigureDesc.description,
           inputSchema: responsesConfigureDesc.inputSchema,
+        },
+        {
+          name: securityConfigureDesc.name,
+          description: securityConfigureDesc.description,
+          inputSchema: securityConfigureDesc.inputSchema,
+        },
+        {
+          name: referencesManageDesc.name,
+          description: referencesManageDesc.description,
+          inputSchema: referencesManageDesc.inputSchema,
         },
       ],
     }
@@ -183,6 +199,16 @@ export async function buildServer() {
       return result
     }
 
+    if (name === 'security_configure') {
+      const result = await securityConfigureTool.execute(args as any)
+      return result
+    }
+
+    if (name === 'references_manage') {
+      const result = await referencesManageTool.execute(args as any)
+      return result
+    }
+
     throw new Error(`Unknown tool: ${name}`)
   })
 
@@ -210,6 +236,8 @@ export async function buildServer() {
         'version_control',
         'parameters_configure',
         'responses_configure',
+        'security_configure',
+        'references_manage',
       ],
     }
   })
