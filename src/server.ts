@@ -9,7 +9,6 @@
  */
 
 import Fastify from 'fastify'
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { config } from './config'
 import { FileSystemStorage } from './storage/file-system-storage'
 import { SpecManager } from './services/spec-manager'
@@ -55,19 +54,6 @@ export async function buildServer() {
   const diffCalculator = new DiffCalculator()
   const validationService = new ValidationService(specManager)
   const auditLogger = new AuditLogger(storage)
-
-  // Initialize MCP server
-  const mcp = new McpServer(
-    {
-      name: 'openapi-control-plane-mcp',
-      version: '1.0.0',
-    },
-    {
-      capabilities: {
-        tools: {},
-      },
-    }
-  )
 
   // Register tools
   const specReadTool = new SpecReadTool(specManager)
@@ -305,18 +291,6 @@ export async function buildServer() {
       }
     }
   })
-
-  // Connect MCP server transport (stdio by default)
-  const transport = {
-    start: async () => {
-      logger.info('MCP transport started (stdio)')
-    },
-    close: async () => {
-      logger.info('MCP transport closed')
-    },
-  }
-
-  await mcp.connect(transport as any)
 
   return fastify
 }
