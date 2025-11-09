@@ -11,8 +11,13 @@
 import SwaggerParser from '@apidevtools/swagger-parser'
 import * as yaml from 'js-yaml'
 import { type BaseStorageProvider } from '../storage/base-storage-provider'
-import { type ApiId, detectOpenAPIVersion, type OpenAPIDocument } from '../types/openapi'
-import { createStorageError, ToolError } from '../utils/errors'
+import {
+  type ApiId,
+  type VersionTag,
+  detectOpenAPIVersion,
+  type OpenAPIDocument,
+} from '../types/openapi'
+import { createStorageError, StorageError, ToolError } from '../utils/errors'
 import { logger } from '../utils/logger'
 
 /**
@@ -23,87 +28,133 @@ export class SpecManager {
   constructor(private storage: BaseStorageProvider) {}
 
   /**
-   * Loads the current version of an API spec
+   * Loads a specific version of an API spec
    * @param apiId - API identifier
+   * @param version - Version tag (e.g., 'v1.0.0')
    * @returns Promise resolving to the parsed OpenAPI document
    * @throws StorageError if spec doesn't exist or can't be read
    * @throws ToolError if spec is invalid
-   * @description Reads current.yaml (or current.json) and parses it.
-   * Like opening a book, but digital and with less papercutting risk.
+   * @description Reads the versioned spec file and parses it.
+   * Like opening a specific edition of a book from your library.
    */
-  async loadSpec(apiId: ApiId): Promise<OpenAPIDocument> {
-    const yamlPath = `specs/${apiId}/current.yaml`
-    const jsonPath = `specs/${apiId}/current.json`
+  async loadSpec(apiId: ApiId, version: VersionTag): Promise<OpenAPIDocument> {
+    const yamlPath = `${apiId}/${version}/spec.yaml`
+    const jsonPath = `${apiId}/${version}/spec.json`
 
     try {
       // Try YAML first (preferred format)
       if (await this.storage.exists(yamlPath)) {
         const content = await this.storage.read(yamlPath)
-        const spec = yaml.load(content) as object
-        await this.validateSpec(spec)
-        const version = detectOpenAPIVersion(spec)
-        return { version, spec } as OpenAPIDocument
+        const parsedSpec = await SwaggerParser.parse(content as any)
+        const detectedVersion = detectOpenAPIVersion(parsedSpec)
+        logger.debug({ apiId, version, detectedVersion }, 'Loaded spec from YAML')
+        return { version: detectedVersion, spec: parsedSpec } as OpenAPIDocument
       }
 
       // Fallback to JSON
       if (await this.storage.exists(jsonPath)) {
         const content = await this.storage.read(jsonPath)
-        const spec = JSON.parse(content)
-        await this.validateSpec(spec)
-        const version = detectOpenAPIVersion(spec)
-        return { version, spec } as OpenAPIDocument
+        const parsedSpec = await SwaggerParser.parse(JSON.parse(content))
+        const detectedVersion = detectOpenAPIVersion(parsedSpec)
+        logger.debug({ apiId, version, detectedVersion }, 'Loaded spec from JSON')
+        return { version: detectedVersion, spec: parsedSpec } as OpenAPIDocument
       }
 
-      throw createStorageError(`Spec not found: ${apiId}`, yamlPath, 'read')
+      throw createStorageError(
+        `Spec not found for API ${apiId} version ${version}`,
+        yamlPath,
+        'read'
+      )
     } catch (error) {
-      if (error instanceof Error && error.message.includes('not found')) {
+      if (error instanceof StorageError) {
         throw error
       }
-      logger.error({ apiId, error }, 'Failed to load spec')
-      throw new ToolError(`Failed to load spec for API: ${apiId}`, {
-        tool_name: 'spec_manager',
-        cause: error as Error,
-      })
+      logger.error({ apiId, version, error }, 'Failed to load spec')
+      throw createStorageError(
+        `Failed to load spec for API ${apiId} version ${version}`,
+        yamlPath,
+        'read',
+        error as Error
+      )
     }
   }
 
   /**
-   * Saves an API spec
+   * Saves an API spec for a specific version
    * @param apiId - API identifier
+   * @param version - Version tag
    * @param spec - OpenAPI specification to save
    * @param format - Output format (yaml or json)
-   * @description Saves spec as current.yaml or current.json using atomic writes.
-   * Creates a backup of the previous version automatically.
+   * @description Saves spec using atomic writes to prevent corruption.
    */
   async saveSpec(
     apiId: ApiId,
+    version: VersionTag,
     spec: object,
     format: 'yaml' | 'json' = 'yaml'
   ): Promise<void> {
-    const currentPath = `specs/${apiId}/current.${format}`
-    const backupPath = `specs/${apiId}/current.${format}.backup`
+    const specPath = `${apiId}/${version}/spec.${format}`
 
     try {
-      // Validate before saving
-      await this.validateSpec(spec)
+      // Ensure directory exists
+      await this.storage.ensureDirectory(`${apiId}/${version}`)
 
-      // Backup existing file if it exists
-      if (await this.storage.exists(currentPath)) {
-        const existing = await this.storage.read(currentPath)
-        await this.storage.write(backupPath, existing)
+      // Save spec
+      const content = format === 'yaml' ? yaml.dump(spec) : JSON.stringify(spec, null, 2)
+      await this.storage.write(specPath, content)
+
+      logger.info({ apiId, version, format }, 'Spec saved successfully')
+    } catch (error) {
+      logger.error({ apiId, version, error }, 'Failed to save spec')
+      throw createStorageError(
+        `Failed to save spec for API ${apiId} version ${version}`,
+        specPath,
+        'write',
+        error as Error
+      )
+    }
+  }
+
+  /**
+   * Checks if a specific version of a spec exists
+   * @param apiId - API identifier
+   * @param version - Version tag
+   * @returns True if the spec exists
+   */
+  async specExists(apiId: ApiId, version: VersionTag): Promise<boolean> {
+    const yamlPath = `${apiId}/${version}/spec.yaml`
+    const jsonPath = `${apiId}/${version}/spec.json`
+    return (await this.storage.exists(yamlPath)) || (await this.storage.exists(jsonPath))
+  }
+
+  /**
+   * Deletes a specific version of a spec
+   * @param apiId - API identifier
+   * @param version - Version tag
+   * @throws StorageError if deletion fails
+   */
+  async deleteSpec(apiId: ApiId, version: VersionTag): Promise<void> {
+    const yamlPath = `${apiId}/${version}/spec.yaml`
+    const jsonPath = `${apiId}/${version}/spec.json`
+
+    try {
+      // Delete whichever format exists
+      if (await this.storage.exists(yamlPath)) {
+        await this.storage.delete(yamlPath)
+      }
+      if (await this.storage.exists(jsonPath)) {
+        await this.storage.delete(jsonPath)
       }
 
-      // Save new spec
-      const content = format === 'yaml' ? yaml.dump(spec) : JSON.stringify(spec, null, 2)
-      await this.storage.write(currentPath, content)
-
-      logger.info({ apiId, format }, 'Spec saved successfully')
+      logger.info({ apiId, version }, 'Spec deleted successfully')
     } catch (error) {
-      logger.error({ apiId, error }, 'Failed to save spec')
-      throw new ToolError(`Failed to save spec for API: ${apiId}`, {
-        tool_name: 'spec_manager',
-        cause: error as Error,
-      })
+      logger.error({ apiId, version, error }, 'Failed to delete spec')
+      throw createStorageError(
+        `Failed to delete spec for API ${apiId} version ${version}`,
+        yamlPath,
+        'delete',
+        error as Error
+      )
     }
   }
 
@@ -142,7 +193,7 @@ export class SpecManager {
    */
   async validateSpec(spec: object): Promise<void> {
     try {
-      await SwaggerParser.validate(spec as Parameters<typeof SwaggerParser.validate>[0])
+      await SwaggerParser.validate(spec as any)
     } catch (error) {
       throw new ToolError('Spec validation failed', {
         tool_name: 'spec_manager',
@@ -180,35 +231,12 @@ export class SpecManager {
    * @returns Promise resolving to true if API exists
    */
   async apiExists(apiId: ApiId): Promise<boolean> {
-    const yamlPath = `specs/${apiId}/current.yaml`
-    const jsonPath = `specs/${apiId}/current.json`
+    const yamlPath = `${apiId}/current.yaml`
+    const jsonPath = `${apiId}/current.json`
     return (await this.storage.exists(yamlPath)) || (await this.storage.exists(jsonPath))
   }
 
-  /**
-   * Creates a new API with initial spec
-   * @param apiId - API identifier
-   * @param initialSpec - Initial OpenAPI specification
-   * @description Initializes a new API with folder structure and initial spec.
-   * Like creating a new folder, but with more ceremony.
-   */
-  async createApi(apiId: ApiId, initialSpec: object): Promise<void> {
-    try {
-      // Ensure API directory exists
-      await this.storage.ensureDirectory(`specs/${apiId}`)
-      await this.storage.ensureDirectory(`specs/${apiId}/versions`)
-
-      // Save initial spec
-      await this.saveSpec(apiId, initialSpec, 'yaml')
-
-      logger.info({ apiId }, 'API created successfully')
-    } catch (error) {
-      logger.error({ apiId, error }, 'Failed to create API')
-      throw new ToolError(`Failed to create API: ${apiId}`, {
-        tool_name: 'spec_manager',
-        cause: error as Error,
-      })
-    }
-  }
+  // TODO: Implement createApi method with proper version handling
 }
+
 
