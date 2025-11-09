@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "start:mcp": "node dist/mcp-server.js",
     "build": "tsc",
     "test": "jest",
     "test:watch": "jest --watch",

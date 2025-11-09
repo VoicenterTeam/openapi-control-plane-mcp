@@ -86,131 +86,18 @@ export async function buildServer() {
   const securityConfigureTool = new SecurityConfigureTool(specManager, auditLogger)
   const referencesManageTool = new ReferencesManageTool(specManager, auditLogger)
 
-  const specReadDesc = specReadTool.describe()
-  const specValidateDesc = specValidateTool.describe()
-  const metadataUpdateDesc = metadataUpdateTool.describe()
-  const schemaManageDesc = schemaManageTool.describe()
-  const endpointManageDesc = endpointManageTool.describe()
-  const versionControlDesc = versionControlTool.describe()
-  const parametersConfigureDesc = parametersConfigureTool.describe()
-  const responsesConfigureDesc = responsesConfigureTool.describe()
-  const securityConfigureDesc = securityConfigureTool.describe()
-  const referencesManageDesc = referencesManageTool.describe()
-
-  mcp.setRequestHandler('tools/list', async () => {
-    return {
-      tools: [
-        {
-          name: specReadDesc.name,
-          description: specReadDesc.description,
-          inputSchema: specReadDesc.inputSchema,
-        },
-        {
-          name: specValidateDesc.name,
-          description: specValidateDesc.description,
-          inputSchema: specValidateDesc.inputSchema,
-        },
-        {
-          name: metadataUpdateDesc.name,
-          description: metadataUpdateDesc.description,
-          inputSchema: metadataUpdateDesc.inputSchema,
-        },
-        {
-          name: schemaManageDesc.name,
-          description: schemaManageDesc.description,
-          inputSchema: schemaManageDesc.inputSchema,
-        },
-        {
-          name: endpointManageDesc.name,
-          description: endpointManageDesc.description,
-          inputSchema: endpointManageDesc.inputSchema,
-        },
-        {
-          name: versionControlDesc.name,
-          description: versionControlDesc.description,
-          inputSchema: versionControlDesc.inputSchema,
-        },
-        {
-          name: parametersConfigureDesc.name,
-          description: parametersConfigureDesc.description,
-          inputSchema: parametersConfigureDesc.inputSchema,
-        },
-        {
-          name: responsesConfigureDesc.name,
-          description: responsesConfigureDesc.description,
-          inputSchema: responsesConfigureDesc.inputSchema,
-        },
-        {
-          name: securityConfigureDesc.name,
-          description: securityConfigureDesc.description,
-          inputSchema: securityConfigureDesc.inputSchema,
-        },
-        {
-          name: referencesManageDesc.name,
-          description: referencesManageDesc.description,
-          inputSchema: referencesManageDesc.inputSchema,
-        },
-      ],
-    }
-  })
-
-  mcp.setRequestHandler('tools/call', async request => {
-    const { name, arguments: args } = request.params
-
-    logger.info({ tool: name, args }, 'Tool called via MCP')
-
-    if (name === 'spec_read') {
-      const result = await specReadTool.execute(args as any)
-      return result
-    }
-
-    if (name === 'spec_validate') {
-      const result = await specValidateTool.execute(args as any)
-      return result
-    }
-
-    if (name === 'metadata_update') {
-      const result = await metadataUpdateTool.execute(args as any)
-      return result
-    }
-
-    if (name === 'schema_manage') {
-      const result = await schemaManageTool.execute(args as any)
-      return result
-    }
-
-    if (name === 'endpoint_manage') {
-      const result = await endpointManageTool.execute(args as any)
-      return result
-    }
-
-    if (name === 'version_control') {
-      const result = await versionControlTool.execute(args as any)
-      return result
-    }
-
-    if (name === 'parameters_configure') {
-      const result = await parametersConfigureTool.execute(args as any)
-      return result
-    }
-
-    if (name === 'responses_configure') {
-      const result = await responsesConfigureTool.execute(args as any)
-      return result
-    }
-
-    if (name === 'security_configure') {
-      const result = await securityConfigureTool.execute(args as any)
-      return result
-    }
-
-    if (name === 'references_manage') {
-      const result = await referencesManageTool.execute(args as any)
-      return result
-    }
-
-    throw new Error(`Unknown tool: ${name}`)
-  })
+  // Suppress unused variable warnings - tools are instantiated but not used in this server
+  // They are used in mcp-server.ts instead
+  void specReadTool
+  void specValidateTool
+  void metadataUpdateTool
+  void schemaManageTool
+  void endpointManageTool
+  void versionControlTool
+  void parametersConfigureTool
+  void responsesConfigureTool
+  void securityConfigureTool
+  void referencesManageTool
 
   // Health check endpoint
   fastify.get('/health', async () => {
@@ -222,11 +109,11 @@ export async function buildServer() {
   })
 
   // MCP endpoint (for future HTTP transport)
-  fastify.post('/mcp', async (request, reply) => {
+  fastify.post('/mcp', async () => {
     // Future: Handle MCP over HTTP
     // For now, return a placeholder
     return {
-      message: 'MCP server running - use MCP SDK for communication',
+      message: 'MCP server running - use npm run start:mcp for stdio connection',
       tools: [
         'spec_read',
         'spec_validate',
