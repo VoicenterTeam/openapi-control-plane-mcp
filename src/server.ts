@@ -14,7 +14,7 @@ import { config } from './config'
 import { FileSystemStorage } from './storage/file-system-storage'
 import { SpecManager } from './services/spec-manager'
 import { AuditLogger } from './services/audit-logger'
-import { SpecReadTool, MetadataUpdateTool } from './tools'
+import { SpecReadTool, MetadataUpdateTool, SchemaManageTool } from './tools'
 import { logger } from './utils/logger'
 
 /**
@@ -55,9 +55,11 @@ export async function buildServer() {
   // Register tools
   const specReadTool = new SpecReadTool(specManager)
   const metadataUpdateTool = new MetadataUpdateTool(specManager, auditLogger)
+  const schemaManageTool = new SchemaManageTool(specManager, auditLogger)
   
   const specReadDesc = specReadTool.describe()
   const metadataUpdateDesc = metadataUpdateTool.describe()
+  const schemaManageDesc = schemaManageTool.describe()
 
   mcp.setRequestHandler('tools/list', async () => {
     return {
@@ -71,6 +73,11 @@ export async function buildServer() {
           name: metadataUpdateDesc.name,
           description: metadataUpdateDesc.description,
           inputSchema: metadataUpdateDesc.inputSchema,
+        },
+        {
+          name: schemaManageDesc.name,
+          description: schemaManageDesc.description,
+          inputSchema: schemaManageDesc.inputSchema,
         },
       ],
     }
@@ -88,6 +95,11 @@ export async function buildServer() {
 
     if (name === 'metadata_update') {
       const result = await metadataUpdateTool.execute(args as any)
+      return result
+    }
+
+    if (name === 'schema_manage') {
+      const result = await schemaManageTool.execute(args as any)
       return result
     }
 
@@ -109,7 +121,7 @@ export async function buildServer() {
     // For now, return a placeholder
     return {
       message: 'MCP server running - use MCP SDK for communication',
-      tools: ['spec_read', 'metadata_update'],
+      tools: ['spec_read', 'metadata_update', 'schema_manage'],
     }
   })
 

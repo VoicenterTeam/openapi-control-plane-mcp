@@ -8,4 +8,5 @@
 export { SpecReadTool } from './spec-read-tool'
 export { SpecValidateTool } from './spec-validate-tool'
 export { MetadataUpdateTool } from './metadata-update-tool'
+export { SchemaManageTool } from './schema-manage-tool'
 
