@@ -13,6 +13,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { config } from './config'
 import { FileSystemStorage } from './storage/file-system-storage'
 import { SpecManager } from './services/spec-manager'
+import { VersionManager } from './services/version-manager'
+import { DiffCalculator } from './services/diff-calculator'
 import { ValidationService } from './services/validation-service'
 import { AuditLogger } from './services/audit-logger'
 import {
@@ -21,6 +23,7 @@ import {
   MetadataUpdateTool,
   SchemaManageTool,
   EndpointManageTool,
+  VersionControlTool,
 } from './tools'
 import { logger } from './utils/logger'
 
@@ -44,7 +47,9 @@ export async function buildServer() {
 
   // Initialize services
   const specManager = new SpecManager(storage)
-  const validationService = new ValidationService(storage)
+  const versionManager = new VersionManager(storage)
+  const diffCalculator = new DiffCalculator()
+  const validationService = new ValidationService(specManager)
   const auditLogger = new AuditLogger(storage)
 
   // Initialize MCP server
@@ -62,16 +67,23 @@ export async function buildServer() {
 
   // Register tools
   const specReadTool = new SpecReadTool(specManager)
-  const specValidateTool = new SpecValidateTool(specManager, validationService)
+  const specValidateTool = new SpecValidateTool(validationService)
   const metadataUpdateTool = new MetadataUpdateTool(specManager, auditLogger)
   const schemaManageTool = new SchemaManageTool(specManager, auditLogger)
   const endpointManageTool = new EndpointManageTool(specManager, auditLogger)
+  const versionControlTool = new VersionControlTool(
+    specManager,
+    versionManager,
+    diffCalculator,
+    auditLogger
+  )
 
   const specReadDesc = specReadTool.describe()
   const specValidateDesc = specValidateTool.describe()
   const metadataUpdateDesc = metadataUpdateTool.describe()
   const schemaManageDesc = schemaManageTool.describe()
   const endpointManageDesc = endpointManageTool.describe()
+  const versionControlDesc = versionControlTool.describe()
 
   mcp.setRequestHandler('tools/list', async () => {
     return {
@@ -100,6 +112,11 @@ export async function buildServer() {
           name: endpointManageDesc.name,
           description: endpointManageDesc.description,
           inputSchema: endpointManageDesc.inputSchema,
+        },
+        {
+          name: versionControlDesc.name,
+          description: versionControlDesc.description,
+          inputSchema: versionControlDesc.inputSchema,
         },
       ],
     }
@@ -135,6 +152,11 @@ export async function buildServer() {
       return result
     }
 
+    if (name === 'version_control') {
+      const result = await versionControlTool.execute(args as any)
+      return result
+    }
+
     throw new Error(`Unknown tool: ${name}`)
   })
 
@@ -153,7 +175,14 @@ export async function buildServer() {
     // For now, return a placeholder
     return {
       message: 'MCP server running - use MCP SDK for communication',
-      tools: ['spec_read', 'spec_validate', 'metadata_update', 'schema_manage', 'endpoint_manage'],
+      tools: [
+        'spec_read',
+        'spec_validate',
+        'metadata_update',
+        'schema_manage',
+        'endpoint_manage',
+        'version_control',
+      ],
     }
   })
 
