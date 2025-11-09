@@ -179,6 +179,133 @@ export async function buildServer() {
     }
   })
 
+  // MCP SSE endpoint
+  fastify.get('/mcp/sse', async (request, reply) => {
+    reply.raw.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+    })
+
+    // Send initial connection message
+    reply.raw.write('event: endpoint\n')
+    reply.raw.write(`data: ${JSON.stringify({ type: 'endpoint', endpoint: '/mcp/message' })}\n\n`)
+
+    // Keep connection alive with heartbeat
+    const heartbeat = setInterval(() => {
+      reply.raw.write(': heartbeat\n\n')
+    }, 30000)
+
+    request.raw.on('close', () => {
+      clearInterval(heartbeat)
+      logger.info('SSE client disconnected')
+    })
+  })
+
+  // MCP message endpoint for SSE transport
+  fastify.post('/mcp/message', async (request) => {
+    const body = request.body as any
+    const { jsonrpc, method, params, id } = body
+
+    logger.info({ method, params }, 'MCP message received via SSE')
+
+    try {
+      let result: any
+
+      if (method === 'tools/list') {
+        const tools = [
+          specReadTool,
+          specValidateTool,
+          metadataUpdateTool,
+          schemaManageTool,
+          endpointManageTool,
+          versionControlTool,
+          parametersConfigureTool,
+          responsesConfigureTool,
+          securityConfigureTool,
+          referencesManageTool,
+        ]
+
+        result = {
+          tools: tools.map((tool) => {
+            const desc = tool.describe()
+            return {
+              name: desc.name,
+              description: desc.description,
+              inputSchema: desc.inputSchema,
+            }
+          }),
+        }
+      } else if (method === 'tools/call') {
+        const { name, arguments: args } = params
+
+        let toolResult
+
+        switch (name) {
+          case 'spec_read':
+            toolResult = await specReadTool.execute(args)
+            break
+          case 'spec_validate':
+            toolResult = await specValidateTool.execute(args)
+            break
+          case 'metadata_update':
+            toolResult = await metadataUpdateTool.execute(args)
+            break
+          case 'schema_manage':
+            toolResult = await schemaManageTool.execute(args)
+            break
+          case 'endpoint_manage':
+            toolResult = await endpointManageTool.execute(args)
+            break
+          case 'version_control':
+            toolResult = await versionControlTool.execute(args)
+            break
+          case 'parameters_configure':
+            toolResult = await parametersConfigureTool.execute(args)
+            break
+          case 'responses_configure':
+            toolResult = await responsesConfigureTool.execute(args)
+            break
+          case 'security_configure':
+            toolResult = await securityConfigureTool.execute(args)
+            break
+          case 'references_manage':
+            toolResult = await referencesManageTool.execute(args)
+            break
+          default:
+            throw new Error(`Unknown tool: ${name}`)
+        }
+
+        result = {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(toolResult, null, 2),
+            },
+          ],
+        }
+      } else {
+        throw new Error(`Unsupported method: ${method}`)
+      }
+
+      return {
+        jsonrpc: jsonrpc || '2.0',
+        id,
+        result,
+      }
+    } catch (error) {
+      return {
+        jsonrpc: jsonrpc || '2.0',
+        id,
+        error: {
+          code: -32603,
+          message: (error as Error).message,
+        },
+      }
+    }
+  })
+
   // Connect MCP server transport (stdio by default)
   const transport = {
     start: async () => {
