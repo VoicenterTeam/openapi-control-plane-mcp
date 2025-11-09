@@ -11,4 +11,5 @@ export { MetadataUpdateTool } from './metadata-update-tool'
 export { SchemaManageTool } from './schema-manage-tool'
 export { EndpointManageTool } from './endpoint-manage-tool'
 export { VersionControlTool } from './version-control-tool'
+export { ParametersConfigureTool } from './parameters-configure-tool'
 
