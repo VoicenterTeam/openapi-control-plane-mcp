@@ -24,6 +24,7 @@ import {
   SchemaManageTool,
   EndpointManageTool,
   VersionControlTool,
+  ParametersConfigureTool,
 } from './tools'
 import { logger } from './utils/logger'
 
@@ -77,6 +78,7 @@ export async function buildServer() {
     diffCalculator,
     auditLogger
   )
+  const parametersConfigureTool = new ParametersConfigureTool(specManager, auditLogger)
 
   const specReadDesc = specReadTool.describe()
   const specValidateDesc = specValidateTool.describe()
@@ -84,6 +86,7 @@ export async function buildServer() {
   const schemaManageDesc = schemaManageTool.describe()
   const endpointManageDesc = endpointManageTool.describe()
   const versionControlDesc = versionControlTool.describe()
+  const parametersConfigureDesc = parametersConfigureTool.describe()
 
   mcp.setRequestHandler('tools/list', async () => {
     return {
@@ -117,6 +120,11 @@ export async function buildServer() {
           name: versionControlDesc.name,
           description: versionControlDesc.description,
           inputSchema: versionControlDesc.inputSchema,
+        },
+        {
+          name: parametersConfigureDesc.name,
+          description: parametersConfigureDesc.description,
+          inputSchema: parametersConfigureDesc.inputSchema,
         },
       ],
     }
@@ -157,6 +165,11 @@ export async function buildServer() {
       return result
     }
 
+    if (name === 'parameters_configure') {
+      const result = await parametersConfigureTool.execute(args as any)
+      return result
+    }
+
     throw new Error(`Unknown tool: ${name}`)
   })
 
@@ -182,6 +195,7 @@ export async function buildServer() {
         'schema_manage',
         'endpoint_manage',
         'version_control',
+        'parameters_configure',
       ],
     }
   })
