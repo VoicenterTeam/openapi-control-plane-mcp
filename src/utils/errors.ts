@@ -10,10 +10,6 @@
 
 import {
   ErrorType,
-  type ValidationErrorDetails,
-  type StorageErrorDetails,
-  type ToolErrorDetails,
-  type ReferenceErrorDetails,
 } from '../types/errors'
 
 /**
@@ -41,7 +37,7 @@ export class CustomError extends Error {
  * @description Thrown when input doesn't pass validation. Like a bouncer
  * refusing entry because your ID expired in 1987.
  */
-export class ValidationError extends CustomError implements ValidationErrorDetails {
+export class ValidationError extends CustomError {
   public field?: string
   public expected?: string
   public received?: string
@@ -71,7 +67,7 @@ export class ValidationError extends CustomError implements ValidationErrorDetai
  * @description Thrown when file system operations fail. Because sometimes
  * the disk is full, the permissions are wrong, or Mercury is in retrograde.
  */
-export class StorageError extends CustomError implements StorageErrorDetails {
+export class StorageError extends CustomError {
   public path?: string
   public operation?: 'read' | 'write' | 'delete' | 'list' | 'exists'
 
@@ -95,7 +91,7 @@ export class StorageError extends CustomError implements StorageErrorDetails {
  * @description Thrown when an MCP tool fails during execution. When your tool
  * has an existential crisis mid-operation.
  */
-export class ToolError extends CustomError implements ToolErrorDetails {
+export class ToolError extends CustomError {
   public tool_name?: string
   public params?: Record<string, unknown>
 
@@ -119,7 +115,7 @@ export class ToolError extends CustomError implements ToolErrorDetails {
  * @description Thrown when a $ref can't be resolved. Like following a treasure
  * map where X actually marks nothing.
  */
-export class ReferenceError extends CustomError implements ReferenceErrorDetails {
+export class ReferenceError extends CustomError {
   public ref_path?: string
   public location?: string
 

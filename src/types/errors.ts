@@ -115,7 +115,7 @@ export function serializeError(error: Error | BaseError): Record<string, unknown
   if ('details' in error) {
     serialized.details = error.details
   }
-  if ('cause' in error && error.cause) {
+  if ('cause' in error && error.cause && error.cause instanceof Error) {
     serialized.cause = serializeError(error.cause)
   }
 

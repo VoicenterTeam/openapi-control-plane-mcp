@@ -8,6 +8,7 @@
 
 import { describe, it, expect, jest, beforeEach } from '@jest/globals'
 import { promises as fs } from 'fs'
+import * as path from 'path'
 import { FileSystemStorage } from '../../../src/storage/file-system-storage'
 import { StorageError } from '../../../src/utils/errors'
 
@@ -52,7 +53,10 @@ describe('FileSystemStorage', () => {
       const result = await storage.read('test/file.txt')
 
       expect(result).toBe(mockContent)
-      expect(fs.readFile).toHaveBeenCalledWith(`${basePath}/test/file.txt`, 'utf-8')
+      expect(fs.readFile).toHaveBeenCalledWith(
+        path.join(basePath, 'test/file.txt'),
+        'utf-8'
+      )
     })
 
     it('should throw StorageError on read failure', async () => {
@@ -67,7 +71,7 @@ describe('FileSystemStorage', () => {
 
       await storage.read('/test/file.txt')
 
-      expect(fs.readFile).toHaveBeenCalledWith(`${basePath}/test/file.txt`, 'utf-8')
+      expect(fs.readFile).toHaveBeenCalledWith(path.join(basePath, 'test/file.txt'), 'utf-8')
     })
   })
 
@@ -96,10 +100,10 @@ describe('FileSystemStorage', () => {
 
       await storage.write('test/nested/file.txt', 'content')
 
-      expect(fs.mkdir).toHaveBeenCalledWith(
-        expect.stringContaining('test/nested'),
-        expect.objectContaining({ recursive: true })
-      )
+      expect(fs.mkdir).toHaveBeenCalled()
+      const mkdirCall = (fs.mkdir as jest.Mock).mock.calls[0]
+      expect(mkdirCall[0]).toContain('nested')
+      expect(mkdirCall[1]).toEqual(expect.objectContaining({ recursive: true }))
     })
 
     it('should clean up temp file on write error', async () => {
@@ -124,7 +128,7 @@ describe('FileSystemStorage', () => {
       const result = await storage.exists('test/file.txt')
 
       expect(result).toBe(true)
-      expect(fs.access).toHaveBeenCalledWith(`${basePath}/test/file.txt`)
+      expect(fs.access).toHaveBeenCalledWith(path.join(basePath, 'test/file.txt'))
     })
 
     it('should return false if file does not exist', async () => {
@@ -144,7 +148,7 @@ describe('FileSystemStorage', () => {
 
       await storage.delete('test/file.txt')
 
-      expect(fs.unlink).toHaveBeenCalledWith(`${basePath}/test/file.txt`)
+      expect(fs.unlink).toHaveBeenCalledWith(path.join(basePath, 'test/file.txt'))
     })
 
     it('should throw StorageError on delete failure', async () => {

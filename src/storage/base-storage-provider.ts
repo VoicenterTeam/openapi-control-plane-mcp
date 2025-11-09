@@ -8,8 +8,6 @@
  * @module storage/base-storage-provider
  */
 
-import type { StorageError } from '../utils/errors'
-
 /**
  * Configuration for storage providers
  * @description Common config that all storage providers might need
