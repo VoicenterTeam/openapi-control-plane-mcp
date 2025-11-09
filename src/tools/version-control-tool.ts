@@ -9,18 +9,18 @@
  * Think of it as Git for your OpenAPI specs, minus the merge conflicts (thankfully).
  */
 
-import { BaseTool } from '../types/mcp-tool'
-import type { ToolResult } from '../types/mcp-tool'
-import type { ApiId, VersionTag } from '../types/openapi'
-import type { SpecManager } from '../services/spec-manager'
-import type { VersionManager } from '../services/version-manager'
-import type { DiffCalculator } from '../services/diff-calculator'
-import type { AuditLogger } from '../services/audit-logger'
-import { createToolError } from '../utils/errors'
+import { BaseTool } from '../types/mcp-tool.js'
+import type { ToolResult } from '../types/mcp-tool.js'
+import type { ApiId, VersionTag } from '../types/openapi.js'
+import type { SpecManager } from '../services/spec-manager.js'
+import type { VersionManager } from '../services/version-manager.js'
+import type { DiffCalculator } from '../services/diff-calculator.js'
+import type { AuditLogger } from '../services/audit-logger.js'
+import { createToolError } from '../utils/errors.js'
 import {
   versionControlSchema,
   type VersionControlParams,
-} from './schemas/version-control-schema'
+} from './schemas/version-control-schema.js'
 
 /**
  * Version Control Tool Implementation

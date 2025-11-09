@@ -9,7 +9,7 @@
 
 import { config as dotenvConfig } from 'dotenv'
 import { z } from 'zod'
-import { parseCustomExtensionsConfig } from '../types/metadata'
+import { parseCustomExtensionsConfig } from '../types/metadata.js'
 
 // Load .env file
 dotenvConfig()

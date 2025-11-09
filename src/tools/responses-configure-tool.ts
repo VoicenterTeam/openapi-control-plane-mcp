@@ -5,16 +5,16 @@
  * how to say "yes", "no", and "I have no idea what you want".
  */
 
-import { BaseTool } from '../types/mcp-tool'
-import type { ToolResult } from '../types/mcp-tool'
-import type { ApiId, VersionTag } from '../types/openapi'
-import type { SpecManager } from '../services/spec-manager'
-import type { AuditLogger } from '../services/audit-logger'
-import { createToolError } from '../utils/errors'
+import { BaseTool } from '../types/mcp-tool.js'
+import type { ToolResult } from '../types/mcp-tool.js'
+import type { ApiId, VersionTag } from '../types/openapi.js'
+import type { SpecManager } from '../services/spec-manager.js'
+import type { AuditLogger } from '../services/audit-logger.js'
+import { createToolError } from '../utils/errors.js'
 import {
   responsesConfigureSchema,
   type ResponsesConfigureParams,
-} from './schemas/responses-configure-schema'
+} from './schemas/responses-configure-schema.js'
 
 export class ResponsesConfigureTool extends BaseTool {
   constructor(

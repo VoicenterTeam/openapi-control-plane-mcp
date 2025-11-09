@@ -7,13 +7,16 @@
  * @module services/validation-service
  */
 
-import { Spectral } from '@stoplight/spectral-core'
-import { oas } from '@stoplight/spectral-rulesets'
+import SpectralCore from '@stoplight/spectral-core'
+import SpectralRulesets from '@stoplight/spectral-rulesets'
 import type { ISpectralDiagnostic, RulesetDefinition } from '@stoplight/spectral-core'
-import type { ApiId, VersionTag } from '../types/openapi'
-import type { SpecManager } from './spec-manager'
-import { logger } from '../utils/logger'
-import { createValidationError } from '../utils/errors'
+import type { ApiId, VersionTag } from '../types/openapi.js'
+import type { SpecManager } from './spec-manager.js'
+import { logger } from '../utils/logger.js'
+import { createValidationError } from '../utils/errors.js'
+
+const { Spectral } = SpectralCore as any
+const { oas } = SpectralRulesets as any
 
 /**
  * Validation severity levels
@@ -70,7 +73,7 @@ export interface ValidationResult {
  * @description Validates OpenAPI specs using Spectral. The spec police. 👮
  */
 export class ValidationService {
-  private spectral: Spectral
+  private spectral: any
   private specManager: SpecManager
 
   /**

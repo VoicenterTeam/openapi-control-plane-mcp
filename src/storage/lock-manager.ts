@@ -9,8 +9,8 @@
  */
 
 import lockfile from 'proper-lockfile'
-import { createStorageError } from '../utils/errors'
-import { logger } from '../utils/logger'
+import { createStorageError } from '../utils/errors.js'
+import { logger } from '../utils/logger.js'
 
 /**
  * Options for lock acquisition

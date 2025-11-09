@@ -11,13 +11,13 @@
  * on API paths with grace and humorous JSDoc comments.
  */
 
-import { BaseTool } from '../types/mcp-tool'
-import type { ToolResult } from '../types/mcp-tool'
-import type { ApiId, VersionTag } from '../types/openapi'
-import type { SpecManager } from '../services/spec-manager'
-import type { AuditLogger } from '../services/audit-logger'
-import { createToolError } from '../utils/errors'
-import { endpointManageSchema, type EndpointManageParams } from './schemas/endpoint-manage-schema'
+import { BaseTool } from '../types/mcp-tool.js'
+import type { ToolResult } from '../types/mcp-tool.js'
+import type { ApiId, VersionTag } from '../types/openapi.js'
+import type { SpecManager } from '../services/spec-manager.js'
+import type { AuditLogger } from '../services/audit-logger.js'
+import { createToolError } from '../utils/errors.js'
+import { endpointManageSchema, type EndpointManageParams } from './schemas/endpoint-manage-schema.js'
 
 /**
  * HTTP methods supported by OpenAPI

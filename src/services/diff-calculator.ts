@@ -7,9 +7,9 @@
  * @module services/diff-calculator
  */
 
-import type { OpenAPIDocument } from '../types/openapi'
-import type { ChangesSummary } from '../types/metadata'
-import { logger } from '../utils/logger'
+import type { OpenAPIDocument } from '../types/openapi.js'
+import type { ChangesSummary } from '../types/metadata.js'
+import { logger } from '../utils/logger.js'
 
 /**
  * Detailed difference between two specs

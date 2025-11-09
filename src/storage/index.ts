@@ -8,11 +8,11 @@
  */
 
 // Base storage provider
-export * from './base-storage-provider'
+export * from './base-storage-provider.js'
 
 // File system storage
-export * from './file-system-storage'
+export * from './file-system-storage.js'
 
 // Lock manager
-export * from './lock-manager'
+export * from './lock-manager.js'
 

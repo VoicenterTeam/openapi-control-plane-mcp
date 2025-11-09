@@ -8,7 +8,7 @@
  * @module types/metadata
  */
 
-import type { ApiId, VersionTag } from './openapi'
+import type { ApiId, VersionTag } from './openapi.js'
 
 /**
  * Changes summary for version comparison

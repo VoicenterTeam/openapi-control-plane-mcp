@@ -8,14 +8,14 @@
  */
 
 // OpenAPI types
-export * from './openapi'
+export * from './openapi.js'
 
 // Metadata types
-export * from './metadata'
+export * from './metadata.js'
 
 // Error types
-export * from './errors'
+export * from './errors.js'
 
 // MCP Tool types
-export * from './mcp-tool'
+export * from './mcp-tool.js'
 

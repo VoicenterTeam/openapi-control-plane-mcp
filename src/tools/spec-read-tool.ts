@@ -9,12 +9,12 @@
  */
 
 import { z } from 'zod'
-import { BaseTool, type BaseToolParams, type ToolResult, type ToolDescription } from '../types/mcp-tool'
-import { SpecManager } from '../services/spec-manager'
-import { validateApiId, validateVersionTag } from '../utils/validation'
-import { createApiId, createVersionTag } from '../types/openapi'
-import { createToolError } from '../utils/errors'
-import { logger } from '../utils/logger'
+import { BaseTool, type BaseToolParams, type ToolResult, type ToolDescription } from '../types/mcp-tool.js'
+import { SpecManager } from '../services/spec-manager.js'
+import { validateApiId, validateVersionTag } from '../utils/validation.js'
+import { createApiId, createVersionTag } from '../types/openapi.js'
+import { createToolError } from '../utils/errors.js'
+import { logger } from '../utils/logger.js'
 
 /**
  * Parameters for spec_read tool

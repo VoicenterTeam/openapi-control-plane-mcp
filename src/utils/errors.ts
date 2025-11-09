@@ -10,7 +10,7 @@
 
 import {
   ErrorType,
-} from '../types/errors'
+} from '../types/errors.js'
 
 /**
  * Base custom error class

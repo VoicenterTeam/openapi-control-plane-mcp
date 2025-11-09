@@ -8,16 +8,16 @@
  * Handles parameters at both path-level (shared across operations) and operation-level.
  */
 
-import { BaseTool } from '../types/mcp-tool'
-import type { ToolResult } from '../types/mcp-tool'
-import type { ApiId, VersionTag } from '../types/openapi'
-import type { SpecManager } from '../services/spec-manager'
-import type { AuditLogger } from '../services/audit-logger'
-import { createToolError } from '../utils/errors'
+import { BaseTool } from '../types/mcp-tool.js'
+import type { ToolResult } from '../types/mcp-tool.js'
+import type { ApiId, VersionTag } from '../types/openapi.js'
+import type { SpecManager } from '../services/spec-manager.js'
+import type { AuditLogger } from '../services/audit-logger.js'
+import { createToolError } from '../utils/errors.js'
 import {
   parametersConfigureSchema,
   type ParametersConfigureParams,
-} from './schemas/parameters-configure-schema'
+} from './schemas/parameters-configure-schema.js'
 
 /**
  * Parameters Configure Tool Implementation

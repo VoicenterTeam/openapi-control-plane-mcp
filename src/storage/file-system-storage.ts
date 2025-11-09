@@ -10,9 +10,9 @@
 
 import { promises as fs } from 'fs'
 import * as path from 'path'
-import { BaseStorageProvider, type StorageConfig } from './base-storage-provider'
-import { createStorageError } from '../utils/errors'
-import { logStorageOperation } from '../utils/logger'
+import { BaseStorageProvider, type StorageConfig } from './base-storage-provider.js'
+import { createStorageError } from '../utils/errors.js'
+import { logStorageOperation } from '../utils/logger.js'
 
 /**
  * File system storage provider

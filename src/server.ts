@@ -9,13 +9,13 @@
  */
 
 import Fastify from 'fastify'
-import { config } from './config'
-import { FileSystemStorage } from './storage/file-system-storage'
-import { SpecManager } from './services/spec-manager'
-import { VersionManager } from './services/version-manager'
-import { DiffCalculator } from './services/diff-calculator'
-import { ValidationService } from './services/validation-service'
-import { AuditLogger } from './services/audit-logger'
+import { config } from './config/index.js'
+import { FileSystemStorage } from './storage/file-system-storage.js'
+import { SpecManager } from './services/spec-manager.js'
+import { VersionManager } from './services/version-manager.js'
+import { DiffCalculator } from './services/diff-calculator.js'
+import { ValidationService } from './services/validation-service.js'
+import { AuditLogger } from './services/audit-logger.js'
 import {
   SpecReadTool,
   SpecValidateTool,
@@ -27,8 +27,8 @@ import {
   ResponsesConfigureTool,
   SecurityConfigureTool,
   ReferencesManageTool,
-} from './tools'
-import { logger } from './utils/logger'
+} from './tools/index.js'
+import { logger } from './utils/logger.js'
 
 /**
  * Builds and configures the Fastify server

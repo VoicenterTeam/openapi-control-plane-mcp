@@ -5,14 +5,14 @@
  * @module tools
  */
 
-export { SpecReadTool } from './spec-read-tool'
-export { SpecValidateTool } from './spec-validate-tool'
-export { MetadataUpdateTool } from './metadata-update-tool'
-export { SchemaManageTool } from './schema-manage-tool'
-export { EndpointManageTool } from './endpoint-manage-tool'
-export { VersionControlTool } from './version-control-tool'
-export { ParametersConfigureTool } from './parameters-configure-tool'
-export { ResponsesConfigureTool } from './responses-configure-tool'
-export { SecurityConfigureTool } from './security-configure-tool'
-export { ReferencesManageTool } from './references-manage-tool'
+export { SpecReadTool } from './spec-read-tool.js'
+export { SpecValidateTool } from './spec-validate-tool.js'
+export { MetadataUpdateTool } from './metadata-update-tool.js'
+export { SchemaManageTool } from './schema-manage-tool.js'
+export { EndpointManageTool } from './endpoint-manage-tool.js'
+export { VersionControlTool } from './version-control-tool.js'
+export { ParametersConfigureTool } from './parameters-configure-tool.js'
+export { ResponsesConfigureTool } from './responses-configure-tool.js'
+export { SecurityConfigureTool } from './security-configure-tool.js'
+export { ReferencesManageTool } from './references-manage-tool.js'
 

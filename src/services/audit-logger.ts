@@ -7,11 +7,11 @@
  * @module services/audit-logger
  */
 
-import type { ApiId, VersionTag } from '../types/openapi'
-import type { AuditEvent } from '../types/metadata'
-import type { BaseStorageProvider } from '../storage/base-storage-provider'
-import { logger } from '../utils/logger'
-import { createStorageError } from '../utils/errors'
+import type { ApiId, VersionTag } from '../types/openapi.js'
+import type { AuditEvent } from '../types/metadata.js'
+import type { BaseStorageProvider } from '../storage/base-storage-provider.js'
+import { logger } from '../utils/logger.js'
+import { createStorageError } from '../utils/errors.js'
 
 /**
  * Audit Logger Service

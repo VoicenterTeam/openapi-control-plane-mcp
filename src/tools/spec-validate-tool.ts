@@ -8,11 +8,11 @@
  */
 
 import { z } from 'zod'
-import { BaseTool, BaseToolParams, ToolResult, ToolDescription } from '../types/mcp-tool'
-import type { ValidationService } from '../services/validation-service'
-import { createApiId, createVersionTag } from '../types/openapi'
-import { createToolError } from '../utils/errors'
-import { logger } from '../utils/logger'
+import { BaseTool, BaseToolParams, ToolResult, ToolDescription } from '../types/mcp-tool.js'
+import type { ValidationService } from '../services/validation-service.js'
+import { createApiId, createVersionTag } from '../types/openapi.js'
+import { createToolError } from '../utils/errors.js'
+import { logger } from '../utils/logger.js'
 
 /**
  * Parameters for spec_validate tool

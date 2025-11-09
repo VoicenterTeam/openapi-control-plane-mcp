@@ -10,15 +10,15 @@
 
 import SwaggerParser from '@apidevtools/swagger-parser'
 import * as yaml from 'js-yaml'
-import { type BaseStorageProvider } from '../storage/base-storage-provider'
+import { type BaseStorageProvider } from '../storage/base-storage-provider.js'
 import {
   type ApiId,
   type VersionTag,
   detectOpenAPIVersion,
   type OpenAPIDocument,
-} from '../types/openapi'
-import { createStorageError, StorageError, ToolError } from '../utils/errors'
-import { logger } from '../utils/logger'
+} from '../types/openapi.js'
+import { createStorageError, StorageError, ToolError } from '../utils/errors.js'
+import { logger } from '../utils/logger.js'
 
 /**
  * Spec Manager Service

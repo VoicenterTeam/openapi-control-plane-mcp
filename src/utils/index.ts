@@ -8,11 +8,11 @@
  */
 
 // Logger
-export * from './logger'
+export * from './logger.js'
 
 // Errors
-export * from './errors'
+export * from './errors.js'
 
 // Validation
-export * from './validation'
+export * from './validation.js'
 

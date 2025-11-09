@@ -5,13 +5,13 @@
  * detective work - follow the clues, find the connections, solve the mystery.
  */
 
-import { BaseTool } from '../types/mcp-tool'
-import type { ToolResult } from '../types/mcp-tool'
-import type { ApiId, VersionTag } from '../types/openapi'
-import type { SpecManager } from '../services/spec-manager'
-import type { AuditLogger } from '../services/audit-logger'
-import { createToolError } from '../utils/errors'
-import { referencesManageSchema, type ReferencesManageParams } from './schemas/references-manage-schema'
+import { BaseTool } from '../types/mcp-tool.js'
+import type { ToolResult } from '../types/mcp-tool.js'
+import type { ApiId, VersionTag } from '../types/openapi.js'
+import type { SpecManager } from '../services/spec-manager.js'
+import type { AuditLogger } from '../services/audit-logger.js'
+import { createToolError } from '../utils/errors.js'
+import { referencesManageSchema, type ReferencesManageParams } from './schemas/references-manage-schema.js'
 
 export class ReferencesManageTool extends BaseTool {
   constructor(private specManager: SpecManager, private auditLogger: AuditLogger) {

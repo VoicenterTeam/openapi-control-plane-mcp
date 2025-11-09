@@ -8,9 +8,9 @@
  * @module utils/validation
  */
 
-import { ValidationError } from './errors'
-import type { ApiId, VersionTag } from '../types/openapi'
-import { createApiId, createVersionTag } from '../types/openapi'
+import { ValidationError } from './errors.js'
+import type { ApiId, VersionTag } from '../types/openapi.js'
+import { createApiId, createVersionTag } from '../types/openapi.js'
 
 /**
  * Validates an API ID format

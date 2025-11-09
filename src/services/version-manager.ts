@@ -7,11 +7,11 @@
  * @module services/version-manager
  */
 
-import type { ApiId, VersionTag } from '../types/openapi'
-import type { ApiMetadata, VersionMetadata } from '../types/metadata'
-import type { BaseStorageProvider } from '../storage/base-storage-provider'
-import { logger } from '../utils/logger'
-import { createStorageError, createValidationError } from '../utils/errors'
+import type { ApiId, VersionTag } from '../types/openapi.js'
+import type { ApiMetadata, VersionMetadata } from '../types/metadata.js'
+import type { BaseStorageProvider } from '../storage/base-storage-provider.js'
+import { logger } from '../utils/logger.js'
+import { createStorageError, createValidationError } from '../utils/errors.js'
 
 /**
  * Version Manager Service
