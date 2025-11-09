@@ -86,46 +86,96 @@ export async function buildServer() {
   const securityConfigureTool = new SecurityConfigureTool(specManager, auditLogger)
   const referencesManageTool = new ReferencesManageTool(specManager, auditLogger)
 
-  // Suppress unused variable warnings - tools are instantiated but not used in this server
-  // They are used in mcp-server.ts instead
-  void specReadTool
-  void specValidateTool
-  void metadataUpdateTool
-  void schemaManageTool
-  void endpointManageTool
-  void versionControlTool
-  void parametersConfigureTool
-  void responsesConfigureTool
-  void securityConfigureTool
-  void referencesManageTool
-
   // Health check endpoint
   fastify.get('/health', async () => {
     return {
       status: 'ok',
       version: '1.0.0',
       timestamp: new Date().toISOString(),
+      tools: 10,
     }
   })
 
-  // MCP endpoint (for future HTTP transport)
-  fastify.post('/mcp', async () => {
-    // Future: Handle MCP over HTTP
-    // For now, return a placeholder
+  // List all available tools
+  fastify.get('/tools', async () => {
+    const tools = [
+      specReadTool,
+      specValidateTool,
+      metadataUpdateTool,
+      schemaManageTool,
+      endpointManageTool,
+      versionControlTool,
+      parametersConfigureTool,
+      responsesConfigureTool,
+      securityConfigureTool,
+      referencesManageTool,
+    ]
+
     return {
-      message: 'MCP server running - use npm run start:mcp for stdio connection',
-      tools: [
-        'spec_read',
-        'spec_validate',
-        'metadata_update',
-        'schema_manage',
-        'endpoint_manage',
-        'version_control',
-        'parameters_configure',
-        'responses_configure',
-        'security_configure',
-        'references_manage',
-      ],
+      tools: tools.map((tool) => {
+        const desc = tool.describe()
+        return {
+          name: desc.name,
+          description: desc.description,
+          inputSchema: desc.inputSchema,
+        }
+      }),
+    }
+  })
+
+  // Execute a tool via HTTP POST
+  fastify.post('/tools/:toolName', async (request, reply) => {
+    const { toolName } = request.params as { toolName: string }
+    const args = request.body as any
+
+    logger.info({ tool: toolName, args }, 'Tool called via HTTP')
+
+    try {
+      let result
+
+      switch (toolName) {
+        case 'spec_read':
+          result = await specReadTool.execute(args)
+          break
+        case 'spec_validate':
+          result = await specValidateTool.execute(args)
+          break
+        case 'metadata_update':
+          result = await metadataUpdateTool.execute(args)
+          break
+        case 'schema_manage':
+          result = await schemaManageTool.execute(args)
+          break
+        case 'endpoint_manage':
+          result = await endpointManageTool.execute(args)
+          break
+        case 'version_control':
+          result = await versionControlTool.execute(args)
+          break
+        case 'parameters_configure':
+          result = await parametersConfigureTool.execute(args)
+          break
+        case 'responses_configure':
+          result = await responsesConfigureTool.execute(args)
+          break
+        case 'security_configure':
+          result = await securityConfigureTool.execute(args)
+          break
+        case 'references_manage':
+          result = await referencesManageTool.execute(args)
+          break
+        default:
+          reply.code(404)
+          return { error: `Unknown tool: ${toolName}` }
+      }
+
+      return result
+    } catch (error) {
+      reply.code(500)
+      return {
+        error: (error as Error).message,
+        stack: config.NODE_ENV === 'development' ? (error as Error).stack : undefined,
+      }
     }
   })
 
