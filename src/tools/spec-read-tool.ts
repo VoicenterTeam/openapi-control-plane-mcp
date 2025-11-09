@@ -11,7 +11,9 @@
 import { z } from 'zod'
 import { BaseTool, type BaseToolParams, type ToolResult, type ToolDescription } from '../types/mcp-tool'
 import { SpecManager } from '../services/spec-manager'
-import { validateApiId } from '../utils/validation'
+import { validateApiId, validateVersionTag } from '../utils/validation'
+import { createApiId, createVersionTag } from '../types/openapi'
+import { createToolError } from '../utils/errors'
 import { logger } from '../utils/logger'
 
 /**
@@ -19,6 +21,7 @@ import { logger } from '../utils/logger'
  */
 interface SpecReadParams extends BaseToolParams {
   apiId: string
+  version: string
   queryType: 'full_spec' | 'endpoints_list' | 'endpoint_detail' | 'schema_detail' | 'info' | 'servers'
   path?: string
   method?: string
@@ -34,6 +37,7 @@ interface SpecReadParams extends BaseToolParams {
  */
 const specReadSchema = z.object({
   apiId: z.string().describe('API identifier'),
+  version: z.string().describe('Version tag (e.g., v1.0.0)'),
   queryType: z.enum(['full_spec', 'endpoints_list', 'endpoint_detail', 'schema_detail', 'info', 'servers']).describe('Type of information to retrieve'),
   path: z.string().optional().describe('Specific endpoint path (required for endpoint_detail)'),
   method: z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']).optional().describe('HTTP method'),
@@ -65,15 +69,16 @@ export class SpecReadTool extends BaseTool<SpecReadParams> {
     try {
       // Validate parameters
       const validated = this.validate(params, specReadSchema)
-      const apiId = validateApiId(validated.apiId)
+      const apiId = createApiId(validateApiId(validated.apiId))
+      const version = createVersionTag(validateVersionTag(validated.version))
 
       logger.info(
-        { apiId, queryType: validated.queryType, llmReason: validated.llmReason },
+        { apiId, version, queryType: validated.queryType, llmReason: validated.llmReason },
         'Executing spec_read tool'
       )
 
       // Load the spec
-      const { spec } = await this.specManager.loadSpec(apiId)
+      const { spec } = await this.specManager.loadSpec(apiId, version)
 
       // Route to appropriate handler
       switch (validated.queryType) {
@@ -94,7 +99,12 @@ export class SpecReadTool extends BaseTool<SpecReadParams> {
       }
     } catch (error) {
       logger.error({ error, params }, 'spec_read tool failed')
-      return this.error((error as Error).message, { cause: (error as Error).stack })
+      throw createToolError(
+        (error as Error).message,
+        'spec_read',
+        params,
+        error as Error
+      )
     }
   }
 
@@ -102,7 +112,7 @@ export class SpecReadTool extends BaseTool<SpecReadParams> {
    * Returns the full spec
    */
   private handleFullSpec(spec: any): ToolResult {
-    return this.success('Full OpenAPI specification', spec)
+    return this.success('Full OpenAPI specification retrieved', { spec })
   }
 
   /**
@@ -153,24 +163,24 @@ export class SpecReadTool extends BaseTool<SpecReadParams> {
    */
   private handleEndpointDetail(spec: any, path: string, method?: string): ToolResult {
     if (!path) {
-      return this.error('path parameter is required for endpoint_detail')
+      throw createToolError('path parameter is required for endpoint_detail', 'spec_read', { queryType: 'endpoint_detail' })
     }
 
     const pathItem = spec.paths?.[path]
     if (!pathItem) {
-      return this.error(`Endpoint not found: ${path}`)
+      throw createToolError(`Endpoint not found: ${path}`, 'spec_read', { path })
     }
 
     if (method) {
       const operation = pathItem[method.toLowerCase()]
       if (!operation) {
-        return this.error(`Method ${method} not found for path: ${path}`)
+        throw createToolError(`Method ${method} not found for path: ${path}`, 'spec_read', { path, method })
       }
-      return this.success(`Endpoint detail: ${method} ${path}`, operation)
+      return this.success(`Endpoint detail: ${method} ${path}`, { path, method, operation })
     }
 
     // Return all methods if no specific method requested
-    return this.success(`All methods for path: ${path}`, pathItem)
+    return this.success(`All methods for path: ${path}`, { path, methods: pathItem })
   }
 
   /**
@@ -178,23 +188,23 @@ export class SpecReadTool extends BaseTool<SpecReadParams> {
    */
   private handleSchemaDetail(spec: any, schemaName: string): ToolResult {
     if (!schemaName) {
-      return this.error('schemaName parameter is required for schema_detail')
+      throw createToolError('schemaName parameter is required for schema_detail', 'spec_read', { queryType: 'schema_detail' })
     }
 
     const schema = spec.components?.schemas?.[schemaName] || spec.definitions?.[schemaName]
     
     if (!schema) {
-      return this.error(`Schema not found: ${schemaName}`)
+      throw createToolError(`Schema not found: ${schemaName}`, 'spec_read', { schemaName })
     }
 
-    return this.success(`Schema detail: ${schemaName}`, schema)
+    return this.success(`Schema detail: ${schemaName}`, { schemaName, schema })
   }
 
   /**
    * Returns API info
    */
   private handleInfo(spec: any): ToolResult {
-    return this.success('API Information', spec.info || {})
+    return this.success('API Information', { info: spec.info || {} })
   }
 
   /**
