@@ -116,6 +116,7 @@ Every tool operation:
 For more details, see:
 - [Foundation & Tooling](./docs/foundation-tooling/README.md) - Project setup and tooling
 - [Architecture](./docs/architecture/README.md) - System design and patterns _(coming in Part 22)_
+- [Metadata Update Tool](./docs/tool-metadata-update/README.md) - First write operation with full patterns
 - [Tools Reference](./docs/api-tools-testing/TOOLS.md) - Complete MCP tools documentation _(coming in Part 23)_
 
 ## Common Tasks
@@ -178,8 +179,14 @@ Each major feature has its own documentation folder in `docs/`:
 ## Project Status
 
 ✅ Part 1: Foundation & Tooling Setup (Complete)
-🔄 Part 2: TypeScript Types & Interfaces (Next)
-⏳ Parts 3-26: In progress...
+✅ Part 2: TypeScript Types & Interfaces (Complete)
+✅ Part 3: Core Infrastructure (Complete)
+✅ Part 4: Read Operations (Complete)
+✅ Part 5: Version Management Infrastructure (Complete)
+✅ Part 6: Comprehensive Testing (Complete)
+✅ Part 7: First Write Tool - metadata_update (Complete)
+🔄 Part 8: Schema Management Tool (Next)
+⏳ Parts 9-15: Pending...
 
 ---
 
