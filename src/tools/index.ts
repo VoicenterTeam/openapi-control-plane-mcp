@@ -12,4 +12,5 @@ export { SchemaManageTool } from './schema-manage-tool'
 export { EndpointManageTool } from './endpoint-manage-tool'
 export { VersionControlTool } from './version-control-tool'
 export { ParametersConfigureTool } from './parameters-configure-tool'
+export { ResponsesConfigureTool } from './responses-configure-tool'
 

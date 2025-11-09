@@ -25,6 +25,7 @@ import {
   EndpointManageTool,
   VersionControlTool,
   ParametersConfigureTool,
+  ResponsesConfigureTool,
 } from './tools'
 import { logger } from './utils/logger'
 
@@ -79,6 +80,7 @@ export async function buildServer() {
     auditLogger
   )
   const parametersConfigureTool = new ParametersConfigureTool(specManager, auditLogger)
+  const responsesConfigureTool = new ResponsesConfigureTool(specManager, auditLogger)
 
   const specReadDesc = specReadTool.describe()
   const specValidateDesc = specValidateTool.describe()
@@ -87,6 +89,7 @@ export async function buildServer() {
   const endpointManageDesc = endpointManageTool.describe()
   const versionControlDesc = versionControlTool.describe()
   const parametersConfigureDesc = parametersConfigureTool.describe()
+  const responsesConfigureDesc = responsesConfigureTool.describe()
 
   mcp.setRequestHandler('tools/list', async () => {
     return {
@@ -125,6 +128,11 @@ export async function buildServer() {
           name: parametersConfigureDesc.name,
           description: parametersConfigureDesc.description,
           inputSchema: parametersConfigureDesc.inputSchema,
+        },
+        {
+          name: responsesConfigureDesc.name,
+          description: responsesConfigureDesc.description,
+          inputSchema: responsesConfigureDesc.inputSchema,
         },
       ],
     }
@@ -170,6 +178,11 @@ export async function buildServer() {
       return result
     }
 
+    if (name === 'responses_configure') {
+      const result = await responsesConfigureTool.execute(args as any)
+      return result
+    }
+
     throw new Error(`Unknown tool: ${name}`)
   })
 
@@ -196,6 +209,7 @@ export async function buildServer() {
         'endpoint_manage',
         'version_control',
         'parameters_configure',
+        'responses_configure',
       ],
     }
   })
