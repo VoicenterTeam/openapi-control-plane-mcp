@@ -13,7 +13,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { config } from './config'
 import { FileSystemStorage } from './storage/file-system-storage'
 import { SpecManager } from './services/spec-manager'
-import { SpecReadTool } from './tools/spec-read-tool'
+import { AuditLogger } from './services/audit-logger'
+import { SpecReadTool, MetadataUpdateTool } from './tools'
 import { logger } from './utils/logger'
 
 /**
@@ -36,6 +37,7 @@ export async function buildServer() {
 
   // Initialize services
   const specManager = new SpecManager(storage)
+  const auditLogger = new AuditLogger(storage)
 
   // Initialize MCP server
   const mcp = new McpServer(
@@ -52,7 +54,10 @@ export async function buildServer() {
 
   // Register tools
   const specReadTool = new SpecReadTool(specManager)
+  const metadataUpdateTool = new MetadataUpdateTool(specManager, auditLogger)
+  
   const specReadDesc = specReadTool.describe()
+  const metadataUpdateDesc = metadataUpdateTool.describe()
 
   mcp.setRequestHandler('tools/list', async () => {
     return {
@@ -61,6 +66,11 @@ export async function buildServer() {
           name: specReadDesc.name,
           description: specReadDesc.description,
           inputSchema: specReadDesc.inputSchema,
+        },
+        {
+          name: metadataUpdateDesc.name,
+          description: metadataUpdateDesc.description,
+          inputSchema: metadataUpdateDesc.inputSchema,
         },
       ],
     }
@@ -73,6 +83,11 @@ export async function buildServer() {
 
     if (name === 'spec_read') {
       const result = await specReadTool.execute(args as any)
+      return result
+    }
+
+    if (name === 'metadata_update') {
+      const result = await metadataUpdateTool.execute(args as any)
       return result
     }
 
@@ -94,7 +109,7 @@ export async function buildServer() {
     // For now, return a placeholder
     return {
       message: 'MCP server running - use MCP SDK for communication',
-      tools: ['spec_read'],
+      tools: ['spec_read', 'metadata_update'],
     }
   })
 
