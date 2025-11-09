@@ -302,13 +302,17 @@ export async function buildServer() {
  */
 async function start() {
   try {
+    console.log('Starting server...')
     const server = await buildServer()
+    console.log('Server built successfully')
 
     await server.listen({
       port: config.PORT,
       host: config.HOST,
     })
 
+    console.log(`🚀 Server listening on http://${config.HOST}:${config.PORT}`)
+    
     logger.info(
       {
         port: config.PORT,
@@ -319,23 +323,35 @@ async function start() {
     )
 
     // Ensure data directories exist
-    const { FileSystemStorage } = await import('./storage/file-system-storage')
+    const { FileSystemStorage } = await import('./storage/file-system-storage.js')
     const storage = new FileSystemStorage({ basePath: config.DATA_DIR })
     await storage.ensureDirectory('specs')
     await storage.ensureDirectory('backups')
 
     logger.info('Data directories initialized')
   } catch (error) {
+    console.error('❌ ERROR starting server:', error)
     logger.error({ error }, 'Failed to start server')
     process.exit(1)
   }
 }
 
+// Handle uncaught errors
+process.on('uncaughtException', (error) => {
+  console.error('❌ UNCAUGHT EXCEPTION:', error)
+  process.exit(1)
+})
+
+process.on('unhandledRejection', (error) => {
+  console.error('❌ UNHANDLED REJECTION:', error)
+  process.exit(1)
+})
+
 // Start server if run directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  start().catch(error => {
-    logger.error({ error }, 'Fatal error during startup')
-    process.exit(1)
-  })
-}
+console.log('Module loaded, starting server...')
+start().catch(error => {
+  console.error('❌ FATAL ERROR during startup:', error)
+  logger.error({ error }, 'Fatal error during startup')
+  process.exit(1)
+})
 
