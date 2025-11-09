@@ -61,9 +61,9 @@ describe('VersionControlTool - Integration', () => {
       expect((result.data as any)?.version).toBe(v1)
 
       // Verify spec was created
-      const spec = await specManager.loadSpec(apiId, v1)
-      expect(spec).toBeDefined()
-      expect((spec as any).info?.title).toContain('myapi')
+      const loadedDoc = await specManager.loadSpec(apiId, v1)
+      expect(loadedDoc).toBeDefined()
+      expect((loadedDoc as any).spec?.info?.title).toContain('myapi')
     })
 
     it('should list all versions', async () => {
@@ -75,7 +75,7 @@ describe('VersionControlTool - Integration', () => {
       expect(result.success).toBe(true)
       expect((result.data as any)?.count).toBeGreaterThanOrEqual(1)
       const versions = (result.data as any)?.versions || []
-      expect(versions.some((v: any) => v.version === v1)).toBe(true)
+      expect(versions).toContain(v1)
     })
 
     it('should get version details', async () => {
@@ -103,8 +103,8 @@ describe('VersionControlTool - Integration', () => {
       expect((result.data as any)?.sourceVersion).toBe(v1)
 
       // Verify it was copied
-      const spec = await specManager.loadSpec(apiId, v2)
-      expect((spec as any).info?.title).toContain('myapi')
+      const loadedDoc = await specManager.loadSpec(apiId, v2)
+      expect((loadedDoc as any).spec?.info?.title).toContain('myapi')
     })
 
     it('should set current version', async () => {
@@ -127,9 +127,10 @@ describe('VersionControlTool - Integration', () => {
 
     it('should compare two versions', async () => {
       // First, modify v2 to add an endpoint
-      const v2Spec = await specManager.loadSpec(apiId, v2)
-      ;(v2Spec as any).paths = {
-        ...(v2Spec as any).paths,
+      const v2Doc = await specManager.loadSpec(apiId, v2)
+      const v2Spec = (v2Doc as any).spec
+      v2Spec.paths = {
+        ...v2Spec.paths,
         '/users': {
           get: {
             summary: 'List users',
@@ -162,6 +163,13 @@ describe('VersionControlTool - Integration', () => {
         operation: 'create',
         version: v3,
         description: 'Third release',
+      })
+
+      // Set v2 as current so we can delete v3
+      await tool.execute({
+        apiId,
+        operation: 'set_current',
+        version: v2,
       })
 
       // Delete v3
