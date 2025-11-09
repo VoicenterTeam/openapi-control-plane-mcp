@@ -119,6 +119,7 @@ export class VersionControlTool extends BaseTool {
     const { apiId, version, sourceVersion, description, llmReason } = params
 
     // Check if version already exists by getting API metadata
+    let apiExists = true
     try {
       const metadata = await this.versionManager.getApiMetadata(apiId as ApiId)
       if (metadata.versions.includes(version as VersionTag)) {
@@ -130,6 +131,7 @@ export class VersionControlTool extends BaseTool {
       }
     } catch (error) {
       // API doesn't exist yet, that's fine for first version
+      apiExists = false
     }
 
     let spec: any
@@ -154,8 +156,21 @@ export class VersionControlTool extends BaseTool {
       }
     }
 
-    // Save the new version
+    // Save the new version spec
     await this.specManager.saveSpec(apiId as ApiId, version as VersionTag, spec)
+
+    // If API doesn't exist, create API metadata first (which adds the initial version)
+    if (!apiExists) {
+      await this.versionManager.createApiMetadata(
+        apiId as ApiId,
+        `${apiId} API`,
+        'mcp-tool',
+        version as VersionTag
+      )
+    } else {
+      // API exists, so add the new version to it
+      await this.versionManager.addVersion(apiId as ApiId, version as VersionTag, true)
+    }
 
     // Create version metadata
     await this.versionManager.createVersionMetadata(

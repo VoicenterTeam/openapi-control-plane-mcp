@@ -38,6 +38,7 @@ describe('VersionControlTool', () => {
     mockVersionManager = {
       listVersions: jest.fn(),
       getApiMetadata: jest.fn(),
+      createApiMetadata: jest.fn(),
       createVersionMetadata: jest.fn(),
       getVersionMetadata: jest.fn(),
       setCurrentVersion: jest.fn(),
@@ -130,6 +131,12 @@ describe('VersionControlTool', () => {
     it('should create a new version from scratch', async () => {
       mockVersionManager.getApiMetadata.mockRejectedValue(new Error('API not found'))
       mockSpecManager.saveSpec.mockResolvedValue(undefined)
+      mockVersionManager.createApiMetadata.mockResolvedValue({
+        api_id: apiId,
+        current_version: version1,
+        latest_stable: version1,
+        versions: [version1],
+      } as any)
       mockVersionManager.createVersionMetadata.mockResolvedValue(undefined)
 
       const result = await tool.execute({
@@ -142,6 +149,8 @@ describe('VersionControlTool', () => {
       expect(result.success).toBe(true)
       expect((result.data as any)?.version).toBe(version1)
       expect(mockSpecManager.saveSpec).toHaveBeenCalled()
+      expect(mockVersionManager.createApiMetadata).toHaveBeenCalled()
+      expect(mockVersionManager.addVersion).not.toHaveBeenCalled() // Not called for first version
       expect(mockVersionManager.createVersionMetadata).toHaveBeenCalledWith(
         apiId,
         version1,
@@ -171,6 +180,12 @@ describe('VersionControlTool', () => {
       } as any)
       mockSpecManager.loadSpec.mockResolvedValue({ version: '3.0', spec: sourceSpec } as any)
       mockSpecManager.saveSpec.mockResolvedValue(undefined)
+      mockVersionManager.addVersion.mockResolvedValue({
+        api_id: apiId,
+        current_version: version2,
+        latest_stable: version2,
+        versions: [version2, version1],
+      } as any)
       mockVersionManager.createVersionMetadata.mockResolvedValue(undefined)
 
       const result = await tool.execute({
@@ -184,6 +199,7 @@ describe('VersionControlTool', () => {
       expect(result.success).toBe(true)
       expect(mockSpecManager.loadSpec).toHaveBeenCalledWith(apiId, version1)
       expect(mockSpecManager.saveSpec).toHaveBeenCalledWith(apiId, version2, sourceSpec)
+      expect(mockVersionManager.addVersion).toHaveBeenCalledWith(apiId, version2, true)
       expect((result.data as any)?.sourceVersion).toBe(version1)
     })
 
@@ -211,6 +227,12 @@ describe('VersionControlTool', () => {
     it('should include llmReason in audit log', async () => {
       mockVersionManager.getApiMetadata.mockRejectedValue(new Error('API not found'))
       mockSpecManager.saveSpec.mockResolvedValue(undefined)
+      mockVersionManager.createApiMetadata.mockResolvedValue({
+        api_id: apiId,
+        current_version: version1,
+        latest_stable: version1,
+        versions: [version1],
+      } as any)
       mockVersionManager.createVersionMetadata.mockResolvedValue(undefined)
 
       await tool.execute({
