@@ -1,0 +1,48 @@
+openapi: 3.1.0
+info:
+  title: Petstore API
+  version: 1.0.0
+  description: A sample Pet Store Server based on the OpenAPI 3.1 specification
+  x-logo: https://example.com/logo.png
+  x-category: e-commerce
+servers:
+  - url: https://api.petstore.example.com/v1
+paths:
+  /pets:
+    get:
+      summary: List all pets
+      operationId: listPets
+      x-visibility: public
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return
+          schema:
+            type: integer
+            format: int32
+          x-hint: Recommended range: 10-100
+      responses:
+        '200':
+          description: A list of pets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pet'
+components:
+  schemas:
+    Pet:
+      type: object
+      required:
+        - id
+        - name
+      x-team: data-team
+      properties:
+        id:
+          type: [integer, 'null']
+        name:
+          type: string
+        tag:
+          type: string
+

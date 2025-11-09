@@ -1,0 +1,79 @@
+openapi: 3.0.0
+info:
+  title: Petstore API
+  version: 1.0.0
+  description: A sample Pet Store Server based on the OpenAPI 3.0 specification
+  x-logo: https://example.com/logo.png
+  x-category: e-commerce
+  x-team: backend-team
+servers:
+  - url: https://api.petstore.example.com/v1
+    description: Production server
+paths:
+  /pets:
+    get:
+      summary: List all pets
+      operationId: listPets
+      tags:
+        - pets
+      x-internal: false
+      x-visibility: public
+      x-team: pets-team
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          schema:
+            type: integer
+            format: int32
+          x-hint: Use smaller values for mobile clients
+          x-example-context: Pagination for large datasets
+      responses:
+        '200':
+          description: A paged array of pets
+          x-scenario: Successfully retrieved list of pets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pets'
+    post:
+      summary: Create a pet
+      operationId: createPets
+      tags:
+        - pets
+      x-internal: false
+      x-visibility: public
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pet'
+      responses:
+        '201':
+          description: Pet created
+          x-scenario: Pet successfully added to the store
+components:
+  schemas:
+    Pet:
+      type: object
+      required:
+        - id
+        - name
+      x-team: data-model-team
+      x-category: animals
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        tag:
+          type: string
+    Pets:
+      type: array
+      x-team: data-model-team
+      items:
+        $ref: '#/components/schemas/Pet'
+

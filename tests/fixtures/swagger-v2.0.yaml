@@ -1,0 +1,47 @@
+swagger: '2.0'
+info:
+  title: Petstore API
+  version: 1.0.0
+  description: A sample Pet Store Server (Swagger 2.0)
+  x-logo: https://example.com/logo.png
+  x-category: legacy-api
+host: api.petstore.example.com
+basePath: /v1
+schemes:
+  - https
+paths:
+  /pets:
+    get:
+      summary: List all pets
+      operationId: listPets
+      x-visibility: public
+      parameters:
+        - name: limit
+          in: query
+          type: integer
+          format: int32
+          description: Maximum number of pets to return
+          x-hint: Keep under 100 for best performance
+      responses:
+        '200':
+          description: List of pets
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Pet'
+definitions:
+  Pet:
+    type: object
+    required:
+      - id
+      - name
+    x-team: backend-team
+    properties:
+      id:
+        type: integer
+        format: int64
+      name:
+        type: string
+      tag:
+        type: string
+
