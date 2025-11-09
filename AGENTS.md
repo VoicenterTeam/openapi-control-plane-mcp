@@ -187,7 +187,9 @@ Each major feature has its own documentation folder in `docs/`:
 ✅ Part 7: First Write Tool - metadata_update (Complete)
 ✅ Part 8: Schema Management Tool (Complete)
 ✅ Part 9: Endpoint Management Tool (Complete)
-⏳ Part 10-15: Remaining tools, Docker, final polish (Pending...)
+✅ Part 10: Validation Tool (Complete)
+✅ Part 11: Version Control Tool (Complete)
+⏳ Part 12-15: Remaining tools, Docker, final polish (Pending...)
 
 ---
 
