@@ -45,7 +45,8 @@ export class SpecManager {
       // Try YAML first (preferred format)
       if (await this.storage.exists(yamlPath)) {
         const content = await this.storage.read(yamlPath)
-        const parsedSpec = await SwaggerParser.parse(content as any)
+        const spec = yaml.load(content) as object
+        const parsedSpec = await SwaggerParser.parse(spec as any)
         const detectedVersion = detectOpenAPIVersion(parsedSpec)
         logger.debug({ apiId, version, detectedVersion }, 'Loaded spec from YAML')
         return { version: detectedVersion, spec: parsedSpec } as OpenAPIDocument
@@ -54,7 +55,8 @@ export class SpecManager {
       // Fallback to JSON
       if (await this.storage.exists(jsonPath)) {
         const content = await this.storage.read(jsonPath)
-        const parsedSpec = await SwaggerParser.parse(JSON.parse(content))
+        const spec = JSON.parse(content)
+        const parsedSpec = await SwaggerParser.parse(spec as any)
         const detectedVersion = detectOpenAPIVersion(parsedSpec)
         logger.debug({ apiId, version, detectedVersion }, 'Loaded spec from JSON')
         return { version: detectedVersion, spec: parsedSpec } as OpenAPIDocument
