@@ -208,9 +208,7 @@ export async function buildServer() {
               version: '1.0.0',
             },
             capabilities: {
-              tools: {
-                listChanged: true,
-              },
+              tools: {},
             },
           },
         }
