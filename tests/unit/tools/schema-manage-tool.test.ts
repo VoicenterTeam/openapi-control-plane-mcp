@@ -394,6 +394,31 @@ describe('SchemaManageTool', () => {
     })
   })
 
+  describe('error handling', () => {
+    it('should propagate spec load errors', async () => {
+      mockSpecManager.loadSpec.mockRejectedValue(new Error('Load failed'))
+
+      await expect(tool.execute({
+        apiId,
+        version,
+        operation: 'list',
+      })).rejects.toThrow()
+    })
+
+    it('should propagate spec save errors', async () => {
+      mockSpecManager.loadSpec.mockResolvedValue({ version: '3.0', spec: sampleSpec } as any)
+      mockSpecManager.saveSpec.mockRejectedValue(new Error('Save failed'))
+
+      await expect(tool.execute({
+        apiId,
+        version,
+        operation: 'add',
+        schemaName: 'NewSchema',
+        schema: { type: 'object' },
+      })).rejects.toThrow()
+    })
+  })
+
   describe('validation', () => {
     it('should throw error for invalid API ID', async () => {
       await expect(
