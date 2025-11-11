@@ -194,13 +194,11 @@ export async function buildServer() {
     const body = request.body as any
     logger.info({ body }, 'MCP SSE POST request received')
     
-    const requestId = body?.id || 1
-    
-    // If this is an initialize request
-    if (body?.method === 'initialize') {
-      return {
+    // If request has an id, respond with JSON-RPC format
+    if (body?.id !== undefined) {
+      const response = {
         jsonrpc: '2.0',
-        id: requestId,
+        id: body.id,
         result: {
           protocolVersion: '2024-11-05',
           serverInfo: {
@@ -212,10 +210,12 @@ export async function buildServer() {
           },
         },
       }
+      logger.info({ response }, 'Sending JSON-RPC response')
+      return response
     }
     
-    // Otherwise return server info without method/id requirement
-    return {
+    // If no id, return plain object
+    const response = {
       protocolVersion: '2024-11-05',
       serverInfo: {
         name: 'openapi-control-plane-mcp',
@@ -225,6 +225,8 @@ export async function buildServer() {
         tools: {},
       },
     }
+    logger.info({ response }, 'Sending plain response')
+    return response
   })
 
   // MCP message endpoint for SSE transport
