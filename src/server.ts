@@ -208,7 +208,9 @@ export async function buildServer() {
               version: '1.0.0',
             },
             capabilities: {
-              tools: {},
+              tools: {
+                listChanged: true,
+              },
             },
           },
         }
@@ -237,21 +239,29 @@ export async function buildServer() {
           referencesManageTool,
         ]
         
+        const toolsList = tools.map((tool) => {
+          const desc = tool.describe()
+          return {
+            name: desc.name,
+            description: desc.description,
+            inputSchema: desc.inputSchema,
+          }
+        })
+        
         const response = {
           jsonrpc: '2.0',
           id,
           result: {
-            tools: tools.map((tool) => {
-              const desc = tool.describe()
-              return {
-                name: desc.name,
-                description: desc.description,
-                inputSchema: desc.inputSchema,
-              }
-            }),
+            tools: toolsList,
           },
         }
-        logger.info({ toolCount: tools.length }, 'Sending tools list')
+        
+        logger.info({ 
+          toolCount: tools.length,
+          toolNames: toolsList.map(t => t.name),
+          fullResponse: JSON.stringify(response, null, 2)
+        }, 'Sending tools list response')
+        
         return response
       }
       
