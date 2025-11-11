@@ -237,12 +237,25 @@ export async function buildServer() {
           referencesManageTool,
         ]
         
+        // Helper to flatten JSON Schema (resolve $ref to inline schema)
+        const flattenSchema = (schema: any) => {
+          if (schema.$ref && schema.definitions) {
+            // Extract the definition name from $ref (e.g., "#/definitions/specReadSchema")
+            const refName = schema.$ref.split('/').pop()
+            if (refName && schema.definitions[refName]) {
+              // Return the resolved schema without $ref
+              return schema.definitions[refName]
+            }
+          }
+          return schema
+        }
+        
         const toolsList = tools.map((tool) => {
           const desc = tool.describe()
           return {
             name: desc.name,
             description: desc.description,
-            inputSchema: desc.inputSchema,
+            inputSchema: flattenSchema(desc.inputSchema),
           }
         })
         
