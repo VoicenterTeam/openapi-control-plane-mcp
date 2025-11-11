@@ -190,19 +190,39 @@ export async function buildServer() {
   })
 
   // MCP SSE endpoint - POST for initial handshake (Cursor sends POST first)
-  fastify.post('/mcp/sse', async () => {
-    logger.info('MCP SSE POST request received')
+  fastify.post('/mcp/sse', async (request) => {
+    const body = request.body as any
+    logger.info({ body }, 'MCP SSE POST request received')
+    
+    const requestId = body?.id || 1
+    
+    // If this is an initialize request
+    if (body?.method === 'initialize') {
+      return {
+        jsonrpc: '2.0',
+        id: requestId,
+        result: {
+          protocolVersion: '2024-11-05',
+          serverInfo: {
+            name: 'openapi-control-plane-mcp',
+            version: '1.0.0',
+          },
+          capabilities: {
+            tools: {},
+          },
+        },
+      }
+    }
+    
+    // Otherwise return server info without method/id requirement
     return {
-      jsonrpc: '2.0',
-      result: {
-        protocolVersion: '2024-11-05',
-        serverInfo: {
-          name: 'openapi-control-plane-mcp',
-          version: '1.0.0',
-        },
-        capabilities: {
-          tools: {},
-        },
+      protocolVersion: '2024-11-05',
+      serverInfo: {
+        name: 'openapi-control-plane-mcp',
+        version: '1.0.0',
+      },
+      capabilities: {
+        tools: {},
       },
     }
   })
