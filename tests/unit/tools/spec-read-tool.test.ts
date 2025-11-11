@@ -288,6 +288,167 @@ describe('SpecReadTool', () => {
     })
   })
 
+  describe('execute - servers', () => {
+    it('should return servers list', async () => {
+      const specWithServers = {
+        ...sampleSpec,
+        servers: [
+          { url: 'https://api.example.com', description: 'Production' },
+          { url: 'https://staging.example.com', description: 'Staging' },
+        ],
+      }
+      mockSpecManager.loadSpec.mockResolvedValue({ version: '3.0', spec: specWithServers } as any)
+
+      const result = await tool.execute({
+        apiId: 'test-api',
+        version: 'v1.0.0',
+        queryType: 'servers',
+      })
+
+      expect(result.success).toBe(true)
+      expect((result.data as any)?.servers).toHaveLength(2)
+      expect((result.data as any)?.servers[0].url).toBe('https://api.example.com')
+    })
+
+    it('should return empty array when no servers defined', async () => {
+      mockSpecManager.loadSpec.mockResolvedValue({ version: '3.0', spec: sampleSpec } as any)
+
+      const result = await tool.execute({
+        apiId: 'test-api',
+        version: 'v1.0.0',
+        queryType: 'servers',
+      })
+
+      expect(result.success).toBe(true)
+      expect((result.data as any)?.servers).toEqual([])
+    })
+  })
+
+  describe('execute - endpoints_list', () => {
+    it('should filter by tag', async () => {
+      const specWithTags = {
+        ...sampleSpec,
+        paths: {
+          '/users': {
+            get: {
+              summary: 'Get users',
+              tags: ['users'],
+              responses: { '200': { description: 'Success' } },
+            },
+          },
+          '/posts': {
+            get: {
+              summary: 'Get posts',
+              tags: ['posts'],
+              responses: { '200': { description: 'Success' } },
+            },
+          },
+        },
+      }
+      mockSpecManager.loadSpec.mockResolvedValue({ version: '3.0', spec: specWithTags } as any)
+
+      const result = await tool.execute({
+        apiId: 'test-api',
+        version: 'v1.0.0',
+        queryType: 'endpoints_list',
+        filters: { tags: ['users'] },
+      })
+
+      expect(result.success).toBe(true)
+      const endpoints = (result.data as any)?.endpoints
+      expect(endpoints).toHaveLength(1)
+      expect(endpoints[0].path).toBe('/users')
+    })
+
+    it('should filter by deprecated status', async () => {
+      const specWithDeprecated = {
+        ...sampleSpec,
+        paths: {
+          '/old': {
+            get: {
+              summary: 'Old endpoint',
+              deprecated: true,
+              responses: { '200': { description: 'Success' } },
+            },
+          },
+          '/new': {
+            get: {
+              summary: 'New endpoint',
+              deprecated: false,
+              responses: { '200': { description: 'Success' } },
+            },
+          },
+        },
+      }
+      mockSpecManager.loadSpec.mockResolvedValue({ version: '3.0', spec: specWithDeprecated } as any)
+
+      const result = await tool.execute({
+        apiId: 'test-api',
+        version: 'v1.0.0',
+        queryType: 'endpoints_list',
+        filters: { deprecated: false },
+      })
+
+      expect(result.success).toBe(true)
+      const endpoints = (result.data as any)?.endpoints
+      expect(endpoints).toHaveLength(1)
+      expect(endpoints[0].path).toBe('/new')
+    })
+
+    it('should return all endpoints when filter tags dont match', async () => {
+      mockSpecManager.loadSpec.mockResolvedValue({ version: '3.0', spec: sampleSpec } as any)
+
+      const result = await tool.execute({
+        apiId: 'test-api',
+        version: 'v1.0.0',
+        queryType: 'endpoints_list',
+        filters: { tags: ['nonexistent'] },
+      })
+
+      expect(result.success).toBe(true)
+      // When no tags match, all endpoints are returned (no tags = untagged endpoints match)
+      expect((result.data as any)?.endpoints.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('execute - endpoint_detail', () => {
+    it('should fail when path parameter missing', async () => {
+      await expect(
+        tool.execute({
+          apiId: 'test-api',
+          version: 'v1.0.0',
+          queryType: 'endpoint_detail',
+          method: 'GET',
+        } as any)
+      ).rejects.toThrow()
+    })
+
+    it('should fail when method parameter missing', async () => {
+      await expect(
+        tool.execute({
+          apiId: 'test-api',
+          version: 'v1.0.0',
+          queryType: 'endpoint_detail',
+          path: '/users',
+        } as any)
+      ).rejects.toThrow()
+    })
+
+    it('should fail when endpoint not found', async () => {
+      mockSpecManager.loadSpec.mockResolvedValue({ version: '3.0', spec: sampleSpec } as any)
+
+      await expect(
+        tool.execute({
+          apiId: 'test-api',
+          version: 'v1.0.0',
+          queryType: 'endpoint_detail',
+          path: '/nonexistent',
+          method: 'GET',
+        })
+      ).rejects.toThrow('not found')
+    })
+  })
+
   describe('validation', () => {
     it('should validate apiId format', async () => {
       await expect(
