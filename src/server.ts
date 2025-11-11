@@ -189,44 +189,148 @@ export async function buildServer() {
     })
   })
 
-  // MCP SSE endpoint - POST for initial handshake (Cursor sends POST first)
+  // MCP SSE endpoint - POST for protocol messages (Cursor sends all requests here)
   fastify.post('/mcp/sse', async (request) => {
     const body = request.body as any
+    const { method, id } = body
     logger.info({ body }, 'MCP SSE POST request received')
     
-    // If request has an id, respond with JSON-RPC format
-    if (body?.id !== undefined) {
-      const response = {
+    try {
+      // Handle initialize
+      if (method === 'initialize') {
+        const response = {
+          jsonrpc: '2.0',
+          id,
+          result: {
+            protocolVersion: '2024-11-05',
+            serverInfo: {
+              name: 'openapi-control-plane-mcp',
+              version: '1.0.0',
+            },
+            capabilities: {
+              tools: {},
+            },
+          },
+        }
+        logger.info({ response }, 'Sending initialize response')
+        return response
+      }
+      
+      // Handle notifications/initialized (no response needed, but return empty success)
+      if (method === 'notifications/initialized') {
+        logger.info('Client initialized notification received')
+        return { jsonrpc: '2.0' }
+      }
+      
+      // Handle tools/list
+      if (method === 'tools/list') {
+        const tools = [
+          specReadTool,
+          specValidateTool,
+          metadataUpdateTool,
+          schemaManageTool,
+          endpointManageTool,
+          versionControlTool,
+          parametersConfigureTool,
+          responsesConfigureTool,
+          securityConfigureTool,
+          referencesManageTool,
+        ]
+        
+        const response = {
+          jsonrpc: '2.0',
+          id,
+          result: {
+            tools: tools.map((tool) => {
+              const desc = tool.describe()
+              return {
+                name: desc.name,
+                description: desc.description,
+                inputSchema: desc.inputSchema,
+              }
+            }),
+          },
+        }
+        logger.info({ toolCount: tools.length }, 'Sending tools list')
+        return response
+      }
+      
+      // Handle tools/call
+      if (method === 'tools/call') {
+        const { name, arguments: args } = body.params
+        logger.info({ toolName: name, args }, 'Tool call requested')
+        
+        let toolResult
+        
+        switch (name) {
+          case 'spec_read':
+            toolResult = await specReadTool.execute(args)
+            break
+          case 'spec_validate':
+            toolResult = await specValidateTool.execute(args)
+            break
+          case 'metadata_update':
+            toolResult = await metadataUpdateTool.execute(args)
+            break
+          case 'schema_manage':
+            toolResult = await schemaManageTool.execute(args)
+            break
+          case 'endpoint_manage':
+            toolResult = await endpointManageTool.execute(args)
+            break
+          case 'version_control':
+            toolResult = await versionControlTool.execute(args)
+            break
+          case 'parameters_configure':
+            toolResult = await parametersConfigureTool.execute(args)
+            break
+          case 'responses_configure':
+            toolResult = await responsesConfigureTool.execute(args)
+            break
+          case 'security_configure':
+            toolResult = await securityConfigureTool.execute(args)
+            break
+          case 'references_manage':
+            toolResult = await referencesManageTool.execute(args)
+            break
+          default:
+            throw new Error(`Unknown tool: ${name}`)
+        }
+        
+        return {
+          jsonrpc: '2.0',
+          id,
+          result: {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(toolResult, null, 2),
+              },
+            ],
+          },
+        }
+      }
+      
+      // Unknown method
+      return {
         jsonrpc: '2.0',
-        id: body.id,
-        result: {
-          protocolVersion: '2024-11-05',
-          serverInfo: {
-            name: 'openapi-control-plane-mcp',
-            version: '1.0.0',
-          },
-          capabilities: {
-            tools: {},
-          },
+        id,
+        error: {
+          code: -32601,
+          message: `Method not found: ${method}`,
         },
       }
-      logger.info({ response }, 'Sending JSON-RPC response')
-      return response
+    } catch (error) {
+      logger.error({ error }, 'Error handling MCP request')
+      return {
+        jsonrpc: '2.0',
+        id,
+        error: {
+          code: -32603,
+          message: (error as Error).message,
+        },
+      }
     }
-    
-    // If no id, return plain object
-    const response = {
-      protocolVersion: '2024-11-05',
-      serverInfo: {
-        name: 'openapi-control-plane-mcp',
-        version: '1.0.0',
-      },
-      capabilities: {
-        tools: {},
-      },
-    }
-    logger.info({ response }, 'Sending plain response')
-    return response
   })
 
   // MCP message endpoint for SSE transport
