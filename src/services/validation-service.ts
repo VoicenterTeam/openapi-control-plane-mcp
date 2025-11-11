@@ -7,16 +7,25 @@
  * @module services/validation-service
  */
 
-import SpectralCore from '@stoplight/spectral-core'
-import SpectralRulesets from '@stoplight/spectral-rulesets'
 import type { ISpectralDiagnostic, RulesetDefinition } from '@stoplight/spectral-core'
 import type { ApiId, VersionTag } from '../types/openapi.js'
 import type { SpecManager } from './spec-manager.js'
 import { logger } from '../utils/logger.js'
 import { createValidationError } from '../utils/errors.js'
 
-const { Spectral } = SpectralCore as any
-const { oas } = SpectralRulesets as any
+// Dynamic imports for CommonJS modules to handle both Node runtime and Jest
+let Spectral: any
+let oas: any
+
+async function loadSpectralDependencies() {
+  if (!Spectral) {
+    const SpectralCore = await import('@stoplight/spectral-core')
+    const SpectralRulesets = await import('@stoplight/spectral-rulesets')
+    Spectral = (SpectralCore as any).Spectral || (SpectralCore as any).default?.Spectral
+    oas = (SpectralRulesets as any).oas || (SpectralRulesets as any).default?.oas
+  }
+  return { Spectral, oas }
+}
 
 /**
  * Validation severity levels
@@ -75,6 +84,7 @@ export interface ValidationResult {
 export class ValidationService {
   private spectral: any
   private specManager: SpecManager
+  private initialized: Promise<void>
 
   /**
    * Creates a new validation service
@@ -83,8 +93,17 @@ export class ValidationService {
    */
   constructor(specManager: SpecManager) {
     this.specManager = specManager
-    this.spectral = new Spectral()
-    this.setupDefaultRuleset()
+    this.initialized = this.initialize()
+  }
+
+  /**
+   * Initialize Spectral with dependencies
+   * @description Loads Spectral dependencies and sets up rulesets
+   */
+  private async initialize(): Promise<void> {
+    const deps = await loadSpectralDependencies()
+    this.spectral = new deps.Spectral()
+    await this.setupDefaultRuleset()
   }
 
   /**
@@ -92,8 +111,9 @@ export class ValidationService {
    * @description Loads Spectral's built-in OpenAPI rules. The standard playbook.
    */
   private async setupDefaultRuleset(): Promise<void> {
+    const deps = await loadSpectralDependencies()
     try {
-      this.spectral.setRuleset(oas as RulesetDefinition)
+      this.spectral.setRuleset(deps.oas as RulesetDefinition)
       logger.info('Validation service initialized with OAS ruleset')
     } catch (error) {
       logger.error({ error }, 'Failed to initialize validation ruleset')
@@ -109,6 +129,7 @@ export class ValidationService {
    * @description Runs the spec through Spectral and reports back. Brutally honest.
    */
   async validateSpec(apiId: ApiId, version: VersionTag): Promise<ValidationResult> {
+    await this.initialized // Ensure Spectral is loaded
     try {
       logger.info({ apiId, version }, 'Starting spec validation')
 
@@ -157,6 +178,7 @@ export class ValidationService {
    * @description Validates a spec that's already in memory. Drive-by validation.
    */
   async validateSpecObject(spec: object, source = 'memory'): Promise<ValidationResult> {
+    await this.initialized // Ensure Spectral is loaded
     try {
       logger.info({ source }, 'Starting spec object validation')
 
