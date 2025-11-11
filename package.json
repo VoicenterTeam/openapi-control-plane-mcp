@@ -1,6 +1,6 @@
 {
   "name": "openapi-control-plane-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP server for OpenAPI/Swagger specification management with version control and LLM-driven editing",
   "main": "dist/server.js",
   "type": "module",

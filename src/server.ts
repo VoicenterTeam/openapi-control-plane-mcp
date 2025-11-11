@@ -205,7 +205,7 @@ export async function buildServer() {
             protocolVersion: '2024-11-05',
             serverInfo: {
               name: 'openapi-control-plane-mcp',
-              version: '1.0.0',
+              version: '1.0.1',
             },
             capabilities: {
               tools: {},

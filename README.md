@@ -1,194 +1,384 @@
 # OpenAPI Control Plane MCP Server
 
-A production-ready Model Context Protocol (MCP) server for managing OpenAPI/Swagger specifications with version control, audit trails, and LLM-driven editing capabilities.
+> **Version 1.0.1** - Production-ready MCP server for OpenAPI/Swagger specification management with LLM-driven editing capabilities.
 
-## Features
+[![Node.js](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
+[![Tests](https://img.shields.io/badge/tests-434%20passing-success)](./tests)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-- 🔧 **10 Comprehensive MCP Tools** - Complete CRUD operations for OpenAPI specs
-- 📚 **Version Control** - Semantic versioning with rollback capabilities  
-- ✅ **Validation & Linting** - Integration with Spectral for OpenAPI best practices
-- 🔍 **Breaking Change Detection** - Automatic detection using oasdiff
-- 📝 **Audit Trail** - Complete audit logging with LLM reasoning capture
-- 🎨 **Custom x- Attributes** - Configurable OpenAPI extensions
-- 🏗️ **Storage Abstraction** - Easy migration from filesystem to S3/Redis
-- 🧪 **Comprehensive Testing** - 80%+ test coverage with Jest
-- 🐳 **Docker Ready** - Debian-based container with PM2 runtime
+## 🎯 Overview
 
-## Quick Start
+A powerful Model Context Protocol (MCP) server that enables AI assistants (like Claude, GPT-4, Cursor IDE) to manage OpenAPI specifications programmatically. Perfect for teams building and maintaining REST APIs with version control, validation, and collaborative editing.
 
-### Prerequisites
+### ✨ Key Features
 
-- Node.js 20+
-- npm or yarn
+- **🛠️ 10 Comprehensive MCP Tools**: Read, validate, and modify OpenAPI specs
+- **📦 Version Control**: Full versioning with diffs, comparisons, and rollback
+- **✅ Validation**: Built-in Spectral validation with configurable rules
+- **🔍 Audit Logging**: Track all changes with LLM reasoning capture
+- **🚀 Dual Transport**: SSE/HTTP and stdio protocols supported
+- **💾 Storage Abstraction**: File-based storage (easily extensible to S3/Redis)
+- **🎨 Custom Extensions**: Support for OpenAPI `x-` attributes
+- **📊 434 Tests**: Comprehensive unit and integration test coverage
+
+## 🚀 Quick Start
 
 ### Installation
 
 ```bash
-# Clone repository
-git clone https://github.com/your-org/openapi-control-plane-mcp.git
+# Clone the repository
+git clone <repository-url>
 cd openapi-control-plane-mcp
 
 # Install dependencies
 npm install
 
-# Configure environment
-cp .env.example .env
-# Edit .env with your settings
+# Build the project
+npm run build
 
-# Start development server
+# Run tests
+npm test
+```
+
+### Starting the Server
+
+#### Option 1: SSE/HTTP Transport (Recommended for Cursor IDE)
+
+```bash
+# Development mode with hot reload
+npm run dev
+
+# Production mode
+node dist/server.js
+```
+
+Server will be available at: `http://localhost:3000`
+
+#### Option 2: Stdio Transport (For CLI/Terminal Integration)
+
+```bash
+npm run start:mcp
+```
+
+### Configuration
+
+Create a `.env` file in the project root:
+
+```env
+# Server Configuration
+PORT=3000
+NODE_ENV=development
+
+# Storage
+DATA_DIR=./data
+
+# Logging
+LOG_LEVEL=info
+LOG_PRETTY=true
+
+# Custom x- Attributes (Optional)
+X_ATTRIBUTE_INFO_LOGO=Logo URL for API
+X_ATTRIBUTE_INFO_CATEGORY=API category
+X_ATTRIBUTE_ENDPOINT_TEAM=Owning team name
+```
+
+## 🔧 MCP Tools
+
+### 1. **spec_read** - Read OpenAPI Specifications
+Query specs with flexible filters: full spec, endpoints list, specific endpoint details, schema definitions, server info.
+
+### 2. **spec_validate** - Validate Specifications
+Run Spectral validation with configurable severity filters (error, warning, info, hint).
+
+### 3. **metadata_update** - Update API Metadata
+Modify info section: title, description, contact, license, terms of service, custom extensions.
+
+### 4. **schema_manage** - Manage Schema Definitions
+Add, update, delete, and list schemas in `components.schemas`.
+
+### 5. **endpoint_manage** - Manage API Endpoints
+Create, update, delete, and list API paths and operations.
+
+### 6. **version_control** - Version Management
+Create versions, compare specs, view diffs, detect breaking changes, rollback.
+
+### 7. **parameters_configure** - Configure Parameters
+Manage query params, path params, headers, and cookies at path or operation level.
+
+### 8. **responses_configure** - Configure Responses
+Define response schemas, status codes, content types, and headers.
+
+### 9. **security_configure** - Security Configuration
+Manage security schemes (API keys, OAuth2, JWT) and global security requirements.
+
+### 10. **references_manage** - Manage $ref References
+Find component usages, validate references, update reference paths across specs.
+
+## 📖 Documentation
+
+### Quick Links
+
+- **[Getting Started](./docs/foundation-tooling/README.md)** - Initial setup and architecture
+- **[Tools Reference](./docs/api-tools-testing/TOOLS.md)** - Complete MCP tools documentation
+- **[HTTP Testing](./HTTP-TESTING.md)** - REST API testing guide
+- **[Cursor Integration](./CURSOR-MCP-SETUP.md)** - Cursor IDE setup instructions
+- **[Troubleshooting](./CURSOR-TROUBLESHOOTING.md)** - Common issues and solutions
+- **[Agent Guide](./AGENTS.md)** - AI coding assistant instructions
+
+### Documentation Structure
+
+```
+docs/
+├── foundation-tooling/     # Project setup and tooling
+├── types-interfaces/       # TypeScript types and interfaces
+├── utilities-logging/      # Logger, errors, validation
+├── storage-abstraction/    # Storage layer and file system
+├── tool-spec-read/        # spec_read tool documentation
+├── tool-spec-validate/    # spec_validate tool documentation
+├── tool-metadata-update/  # metadata_update tool documentation
+├── tool-schema-manage/    # schema_manage tool documentation
+├── tool-endpoint-manage/  # endpoint_manage tool documentation
+├── tool-version-control/  # version_control tool documentation
+├── tool-parameters/       # parameters_configure tool documentation
+├── tool-responses/        # responses_configure tool documentation
+├── tool-security/         # security_configure tool documentation
+├── tool-references/       # references_manage tool documentation
+└── architecture/          # System design and patterns
+```
+
+## 🔌 Integration with Cursor IDE
+
+### Setup
+
+1. **Add to Cursor MCP Configuration** (`~/.cursor/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "openapi-mcp": {
+      "url": "http://localhost:3000/mcp/sse",
+      "transport": "sse"
+    }
+  }
+}
+```
+
+2. **Start the server**:
+```bash
 npm run dev
 ```
 
-### Usage
+3. **Restart Cursor IDE** completely (quit and reopen)
 
-The MCP server exposes 10 tools for OpenAPI management:
+4. **Verify**: Check MCP panel - you should see 10 tools available
 
-1. **spec_read** - Query OpenAPI specifications
-2. **spec_validate** - Validate specs with Spectral
-3. **metadata_update** - Update API metadata
-4. **schema_manage** - CRUD operations on schemas
-5. **endpoint_manage** - Manage API endpoints
-6. **parameters_configure** - Configure request parameters
-7. **responses_configure** - Define response specifications
-8. **references_manage** - Handle $ref operations
-9. **security_configure** - Manage security schemes
-10. **spec_version** - Version control operations
-
-## Architecture
+### Example Usage in Cursor
 
 ```
-┌─────────────┐
-│     LLM     │
-│   (Claude)  │
-└──────┬──────┘
-       │ MCP Protocol
-       │
-┌──────▼──────────────────────────┐
-│   Fastify HTTP Server          │
-│   + MCP Server                 │
-└──────┬──────────────────────────┘
-       │
-┌──────▼──────────────────────────┐
-│   MCP Tools (10 tools)         │
-│   - BaseTool Pattern           │
-│   - Zod Validation             │
-│   - Audit Logging              │
-└──────┬──────────────────────────┘
-       │
-┌──────▼──────────────────────────┐
-│   Services Layer               │
-│   - SpecManager                │
-│   - VersionManager             │
-│   - Validator                  │
-│   - AuditLogger                │
-└──────┬──────────────────────────┘
-       │
-┌──────▼──────────────────────────┐
-│   Storage Abstraction          │
-│   - BaseStorageProvider        │
-│   - FileSystemStorage          │
-│   - (Future: S3, Redis)        │
-└────────────────────────────────┘
+Ask Claude: "Read the OpenAPI spec for my-api version v1.0.0"
+Ask Claude: "List all endpoints in my-api"
+Ask Claude: "Add a new schema called User to my-api"
+Ask Claude: "Validate the my-api specification"
+Ask Claude: "Create a new version v1.1.0 of my-api based on v1.0.0"
 ```
 
-## Custom x- Attributes
-
-Configure custom OpenAPI extensions via environment variables:
+## 🧪 Testing
 
 ```bash
-X_ATTRIBUTE_INFO_LOGO=Logo URL for the API
-X_ATTRIBUTE_ENDPOINT_TEAM=Team responsible for this endpoint
-X_ATTRIBUTE_PARAMETER_HINT=Parameter usage hint for LLM
-X_ATTRIBUTE_SCHEMA_CATEGORY=Schema category for organization
-```
-
-Access via unflatify: `endpoint.properties.logo`
-
-## Development
-
-```bash
-# Run tests
+# Run all tests
 npm test
 
-# Run tests in watch mode
+# Watch mode for development
 npm run test:watch
 
-# Run tests with coverage
+# Coverage report
 npm run test:coverage
 
 # Debug tests
 npm run test:debug
 
-# Lint code
-npm run lint
-
-# Fix lint issues
-npm run lint:fix
-
-# Format code
-npm run format
-
-# Build for production
-npm run build
+# Integration tests only
+npm run test:integration
 ```
 
-## Testing
+**Test Statistics:**
+- ✅ 434 tests passing
+- 📊 80%+ coverage on all metrics
+- ⚡ Fast execution (<30s for full suite)
 
-- **Unit Tests**: `tests/unit/` - Test individual functions and classes
-- **Integration Tests**: `tests/integration/` - Test complete workflows
-- **Coverage**: 80%+ required on all metrics
-- **Fixtures**: `tests/fixtures/` - Sample OpenAPI specs with x- attributes
+## 🏗️ Architecture
 
-## Docker Deployment
+### Core Components
+
+- **Storage Layer**: Abstracted storage with filesystem implementation
+- **Services**: SpecManager, VersionManager, ValidationService, AuditLogger
+- **Tools**: 10 MCP tools implementing BaseTool interface
+- **Server**: Fastify-based HTTP/SSE server + stdio transport
+
+### Data Flow
+
+```
+Client (Cursor/CLI)
+  ↓
+MCP Protocol (SSE/stdio)
+  ↓
+Server (src/server.ts or src/mcp-server.ts)
+  ↓
+Tools (src/tools/*.ts)
+  ↓
+Services (src/services/*.ts)
+  ↓
+Storage (src/storage/*.ts)
+  ↓
+File System (data/)
+```
+
+## 📁 Project Structure
+
+```
+openapi-control-plane-mcp/
+├── src/
+│   ├── config/           # Configuration management
+│   ├── services/         # Business logic services
+│   ├── storage/          # Storage abstraction layer
+│   ├── tools/            # MCP tools implementation
+│   ├── types/            # TypeScript type definitions
+│   ├── utils/            # Utilities (logger, errors, validation)
+│   ├── server.ts         # HTTP/SSE server (Fastify)
+│   └── mcp-server.ts     # Stdio server
+├── tests/
+│   ├── unit/             # Unit tests
+│   ├── integration/      # Integration tests
+│   └── fixtures/         # Test fixtures (sample specs)
+├── docs/                 # Documentation
+├── data/                 # Storage directory (git-ignored)
+└── dist/                 # Compiled JavaScript (git-ignored)
+```
+
+## 🛠️ Development
+
+### Code Style
+
+- **Variables/Functions**: camelCase
+- **Classes**: PascalCase
+- **Files**: kebab-case
+- **ESLint**: Airbnb base config with TypeScript
+- **Prettier**: Single quotes, no semicolons
+
+### Scripts
 
 ```bash
-# Build Docker image
+npm run dev           # Start development server with hot reload
+npm run build         # Build TypeScript to JavaScript
+npm test              # Run tests
+npm run lint          # Lint code
+npm run lint:fix      # Fix linting issues
+npm run format        # Format code with Prettier
+```
+
+### Adding a New Tool
+
+1. Create tool file in `src/tools/` extending `BaseTool`
+2. Define Zod schema for parameters
+3. Implement `execute()` and `describe()` methods
+4. Add tests in `tests/unit/tools/`
+5. Register tool in `src/server.ts` and `src/mcp-server.ts`
+6. Document in `docs/tool-<name>/`
+
+## 🚢 Deployment
+
+### Docker (Coming Soon)
+
+```bash
+# Build image
 npm run docker:build
 
-# Start container with docker-compose
+# Run with docker-compose
 npm run docker:run
 
 # View logs
 npm run docker:logs
 
-# Stop container
+# Stop
 npm run docker:stop
 ```
 
-The container runs on Debian with Node.js 20 and PM2 for process management.
+### Production
 
-## Documentation
+```bash
+# Build
+npm run build
 
-- [Foundation & Tooling](./docs/foundation-tooling/README.md) - Project setup
-- [AGENTS.md](./AGENTS.md) - Guide for AI coding agents
-- [CONTRIBUTING.md](./.github/CONTRIBUTING.md) - Contribution guidelines _(coming soon)_
-- [Architecture](./docs/architecture/README.md) - System design _(coming soon)_
-- [API & Tools](./docs/api-tools-testing/README.md) - Complete tools reference _(coming soon)_
+# Set environment
+export NODE_ENV=production
+export PORT=3000
+export DATA_DIR=/var/lib/openapi-mcp/data
 
-## Project Status
+# Run with PM2
+pm2 start dist/server.js --name openapi-mcp
 
-✅ Part 1: Foundation & Tooling Setup  
-🔄 Part 2-26: In active development
+# Or run directly
+node dist/server.js
+```
 
-Target: Production-ready v1.0.0 in 4-6 weeks
+## 🤝 Contributing
 
-## License
+Contributions are welcome! Please:
 
-MIT
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Run tests (`npm test`)
+5. Push to the branch (`git push origin feature/amazing-feature`)
+6. Open a Pull Request
 
-## Contributing
+### Commit Message Format
 
-Contributions welcome! Please read [CONTRIBUTING.md](./.github/CONTRIBUTING.md) and follow the code style guidelines.
+```
+[category] Brief description
 
-## Code Style
+Categories: feat, fix, docs, test, refactor, style, chore
+Examples:
+  [feat] Add endpoint filtering by tags
+  [fix] Resolve version comparison bug
+  [docs] Update README with examples
+  [test] Add integration tests for metadata_update
+```
 
-- **Uncle Bob's Clean Code** principles
-- **Airbnb ESLint** configuration
-- **Prettier** formatting
-- **Humorous JSDoc** required
-- **camelCase** for variables, **PascalCase** for classes
+## 📝 License
+
+MIT License - see [LICENSE](LICENSE) file for details
+
+## 🙏 Acknowledgments
+
+- Built with [Model Context Protocol SDK](https://github.com/modelcontextprotocol)
+- Validation powered by [Spectral](https://stoplight.io/open-source/spectral)
+- OpenAPI parsing by [@apidevtools/swagger-parser](https://github.com/APIDevTools/swagger-parser)
+
+## 📞 Support
+
+- **Documentation**: [./docs](./docs)
+- **Issues**: Create a GitHub issue
+- **Discussions**: GitHub Discussions
+
+## 🗺️ Roadmap
+
+- [x] ✅ 10 Core MCP Tools
+- [x] ✅ Version Control & Diffing
+- [x] ✅ SSE/HTTP Transport
+- [x] ✅ Stdio Transport
+- [x] ✅ Comprehensive Testing
+- [ ] 🔜 Docker Deployment
+- [ ] 🔜 S3/Redis Storage Backends
+- [ ] 🔜 Authentication (JWT/JWK)
+- [ ] 🔜 Web UI Dashboard
+- [ ] 🔜 Collaborative Editing
+- [ ] 🔜 Git Integration
+- [ ] 🔜 CI/CD Pipeline Templates
 
 ---
 
-Built with ❤️ and a sense of humor 😄
+**Made with ❤️ for the API development community**
 
+*Version 1.0.1 - SSE Transport with Flattened JSON Schema Support*
