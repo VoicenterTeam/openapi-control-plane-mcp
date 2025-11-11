@@ -24,118 +24,393 @@ describe('ResponsesConfigureTool', () => {
     tool = new ResponsesConfigureTool(mockSpecManager, mockAuditLogger)
   })
 
-  it('should list responses', async () => {
-    mockSpecManager.loadSpec.mockResolvedValue({
-      version: '3.0',
-      spec: {
-        paths: {
-          '/users': {
-            get: {
-              responses: {
-                '200': { description: 'Success' },
-                '404': { description: 'Not found' },
+  describe('list', () => {
+    it('should list responses with multiple status codes', async () => {
+      mockSpecManager.loadSpec.mockResolvedValue({
+        version: '3.0',
+        spec: {
+          paths: {
+            '/users': {
+              get: {
+                responses: {
+                  '200': { description: 'Success' },
+                  '400': { description: 'Bad request' },
+                  '404': { description: 'Not found' },
+                },
               },
             },
           },
         },
-      },
-    } as any)
+      } as any)
 
-    const result = await tool.execute({
-      apiId,
-      version,
-      operation: 'list',
-      path: '/users',
-      method: 'GET',
+      const result = await tool.execute({
+        apiId,
+        version,
+        operation: 'list',
+        path: '/users',
+        method: 'GET',
+      })
+
+      expect(result.success).toBe(true)
+      expect((result.data as any)?.count).toBe(3)
+      expect((result.data as any)?.responses).toBeInstanceOf(Array)
+      expect((result.data as any)?.responses[0]).toHaveProperty('statusCode', '200')
     })
 
-    expect(result.success).toBe(true)
-    expect((result.data as any)?.count).toBe(2)
-  })
-
-  it('should add response', async () => {
-    mockSpecManager.loadSpec.mockResolvedValue({
-      version: '3.0',
-      spec: {
-        paths: {
-          '/users': {
-            post: { responses: {} },
+    it('should return empty list when no responses', async () => {
+      mockSpecManager.loadSpec.mockResolvedValue({
+        version: '3.0',
+        spec: {
+          paths: {
+            '/users': {
+              get: {},
+            },
           },
         },
-      },
-    } as any)
+      } as any)
 
-    const result = await tool.execute({
-      apiId,
-      version,
-      operation: 'add',
-      path: '/users',
-      method: 'POST',
-      statusCode: '201',
-      response: { description: 'Created' },
+      const result = await tool.execute({
+        apiId,
+        version,
+        operation: 'list',
+        path: '/users',
+        method: 'GET',
+      })
+
+      expect(result.success).toBe(true)
+      expect((result.data as any)?.count).toBe(0)
     })
 
-    expect(result.success).toBe(true)
-    expect(mockSpecManager.saveSpec).toHaveBeenCalled()
+    it('should fail when path not found', async () => {
+      mockSpecManager.loadSpec.mockResolvedValue({
+        version: '3.0',
+        spec: { paths: {} },
+      } as any)
+
+      await expect(tool.execute({
+        apiId,
+        version,
+        operation: 'list',
+        path: '/nonexistent',
+        method: 'GET',
+      })).rejects.toThrow('not found')
+    })
+
+    it('should fail when method not found', async () => {
+      mockSpecManager.loadSpec.mockResolvedValue({
+        version: '3.0',
+        spec: {
+          paths: {
+            '/users': {
+              get: { responses: {} },
+            },
+          },
+        },
+      } as any)
+
+      await expect(tool.execute({
+        apiId,
+        version,
+        operation: 'list',
+        path: '/users',
+        method: 'POST',
+      })).rejects.toThrow('not found')
+    })
   })
 
-  it('should update response', async () => {
-    mockSpecManager.loadSpec.mockResolvedValue({
-      version: '3.0',
-      spec: {
-        paths: {
-          '/users': {
-            get: {
-              responses: {
-                '200': { description: 'Old' },
+  describe('add', () => {
+    it('should add response with full content', async () => {
+      mockSpecManager.loadSpec.mockResolvedValue({
+        version: '3.0',
+        spec: {
+          paths: {
+            '/users': {
+              post: { responses: {} },
+            },
+          },
+        },
+      } as any)
+
+      const result = await tool.execute({
+        apiId,
+        version,
+        operation: 'add',
+        path: '/users',
+        method: 'POST',
+        statusCode: '201',
+        response: {
+          description: 'Created',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/User' },
+            },
+          },
+        },
+      })
+
+      expect(result.success).toBe(true)
+      expect(mockSpecManager.saveSpec).toHaveBeenCalled()
+      const savedSpec = mockSpecManager.saveSpec.mock.calls[0][2] as any
+      expect(savedSpec.paths['/users'].post.responses['201']).toBeDefined()
+    })
+
+    it('should fail when response already exists', async () => {
+      mockSpecManager.loadSpec.mockResolvedValue({
+        version: '3.0',
+        spec: {
+          paths: {
+            '/users': {
+              get: {
+                responses: {
+                  '200': { description: 'Existing' },
+                },
               },
             },
           },
         },
-      },
-    } as any)
+      } as any)
 
-    const result = await tool.execute({
-      apiId,
-      version,
-      operation: 'update',
-      path: '/users',
-      method: 'GET',
-      statusCode: '200',
-      updates: { description: 'New' },
+      await expect(tool.execute({
+        apiId,
+        version,
+        operation: 'add',
+        path: '/users',
+        method: 'GET',
+        statusCode: '200',
+        response: { description: 'Duplicate' },
+      })).rejects.toThrow('already exists')
     })
 
-    expect(result.success).toBe(true)
-    expect(mockSpecManager.saveSpec).toHaveBeenCalled()
+    it('should fail when status code not provided', async () => {
+      await expect(tool.execute({
+        apiId,
+        version,
+        operation: 'add',
+        path: '/users',
+        method: 'POST',
+        response: { description: 'Test' },
+      } as any)).rejects.toThrow('Validation failed')
+    })
+
+    it('should fail when response object not provided', async () => {
+      await expect(tool.execute({
+        apiId,
+        version,
+        operation: 'add',
+        path: '/users',
+        method: 'POST',
+        statusCode: '201',
+      } as any)).rejects.toThrow('Validation failed')
+    })
+
+    it('should create responses object if missing', async () => {
+      mockSpecManager.loadSpec.mockResolvedValue({
+        version: '3.0',
+        spec: {
+          paths: {
+            '/users': {
+              get: {},
+            },
+          },
+        },
+      } as any)
+
+      const result = await tool.execute({
+        apiId,
+        version,
+        operation: 'add',
+        path: '/users',
+        method: 'GET',
+        statusCode: '200',
+        response: { description: 'Success' },
+      })
+
+      expect(result.success).toBe(true)
+      const savedSpec = mockSpecManager.saveSpec.mock.calls[0][2] as any
+      expect(savedSpec.paths['/users'].get.responses).toBeDefined()
+    })
   })
 
-  it('should delete response', async () => {
-    mockSpecManager.loadSpec.mockResolvedValue({
-      version: '3.0',
-      spec: {
-        paths: {
-          '/users': {
-            delete: {
-              responses: {
-                '204': { description: 'Deleted' },
+  describe('update', () => {
+    it('should update response description', async () => {
+      mockSpecManager.loadSpec.mockResolvedValue({
+        version: '3.0',
+        spec: {
+          paths: {
+            '/users': {
+              get: {
+                responses: {
+                  '200': { description: 'Old description' },
+                },
               },
             },
           },
         },
-      },
-    } as any)
+      } as any)
 
-    const result = await tool.execute({
-      apiId,
-      version,
-      operation: 'delete',
-      path: '/users',
-      method: 'DELETE',
-      statusCode: '204',
+      const result = await tool.execute({
+        apiId,
+        version,
+        operation: 'update',
+        path: '/users',
+        method: 'GET',
+        statusCode: '200',
+        updates: { description: 'Updated description' },
+      })
+
+      expect(result.success).toBe(true)
+      const savedSpec = mockSpecManager.saveSpec.mock.calls[0][2] as any
+      expect(savedSpec.paths['/users'].get.responses['200'].description).toBe('Updated description')
     })
 
-    expect(result.success).toBe(true)
-    expect(mockSpecManager.saveSpec).toHaveBeenCalled()
+    it('should update response content', async () => {
+      mockSpecManager.loadSpec.mockResolvedValue({
+        version: '3.0',
+        spec: {
+          paths: {
+            '/users': {
+              get: {
+                responses: {
+                  '200': {
+                    description: 'Success',
+                    content: {
+                      'application/json': {
+                        schema: { type: 'object' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      } as any)
+
+      const result = await tool.execute({
+        apiId,
+        version,
+        operation: 'update',
+        path: '/users',
+        method: 'GET',
+        statusCode: '200',
+        updates: {
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/User' },
+            },
+          },
+        },
+      })
+
+      expect(result.success).toBe(true)
+      expect(mockSpecManager.saveSpec).toHaveBeenCalled()
+    })
+
+    it('should fail when response does not exist', async () => {
+      mockSpecManager.loadSpec.mockResolvedValue({
+        version: '3.0',
+        spec: {
+          paths: {
+            '/users': {
+              get: {
+                responses: {},
+              },
+            },
+          },
+        },
+      } as any)
+
+      await expect(tool.execute({
+        apiId,
+        version,
+        operation: 'update',
+        path: '/users',
+        method: 'GET',
+        statusCode: '404',
+        updates: { description: 'Updated' },
+      })).rejects.toThrow('not found')
+    })
+
+    it('should fail when updates not provided', async () => {
+      await expect(tool.execute({
+        apiId,
+        version,
+        operation: 'update',
+        path: '/users',
+        method: 'GET',
+        statusCode: '200',
+      } as any)).rejects.toThrow('Validation failed')
+    })
+  })
+
+  describe('delete', () => {
+    it('should delete existing response', async () => {
+      mockSpecManager.loadSpec.mockResolvedValue({
+        version: '3.0',
+        spec: {
+          paths: {
+            '/users': {
+              delete: {
+                responses: {
+                  '204': { description: 'Deleted' },
+                  '404': { description: 'Not found' },
+                },
+              },
+            },
+          },
+        },
+      } as any)
+
+      const result = await tool.execute({
+        apiId,
+        version,
+        operation: 'delete',
+        path: '/users',
+        method: 'DELETE',
+        statusCode: '204',
+      })
+
+      expect(result.success).toBe(true)
+      const savedSpec = mockSpecManager.saveSpec.mock.calls[0][2] as any
+      expect(savedSpec.paths['/users'].delete.responses['204']).toBeUndefined()
+      expect(savedSpec.paths['/users'].delete.responses['404']).toBeDefined()
+    })
+
+    it('should fail when response does not exist', async () => {
+      mockSpecManager.loadSpec.mockResolvedValue({
+        version: '3.0',
+        spec: {
+          paths: {
+            '/users': {
+              get: {
+                responses: {
+                  '200': { description: 'Success' },
+                },
+              },
+            },
+          },
+        },
+      } as any)
+
+      await expect(tool.execute({
+        apiId,
+        version,
+        operation: 'delete',
+        path: '/users',
+        method: 'GET',
+        statusCode: '404',
+      })).rejects.toThrow('not found')
+    })
+
+    it('should fail when status code not provided', async () => {
+      await expect(tool.execute({
+        apiId,
+        version,
+        operation: 'delete',
+        path: '/users',
+        method: 'GET',
+      } as any)).rejects.toThrow('Validation failed')
+    })
   })
 })
 
