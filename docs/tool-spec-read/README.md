@@ -7,6 +7,7 @@ The `spec_read` tool is the gateway to querying OpenAPI specifications in the MC
 ## Features
 
 - ✅ Read full OpenAPI specifications
+- ✅ Output specifications in JSON or YAML format
 - ✅ List all endpoints with optional filtering
 - ✅ Get detailed information for specific endpoints
 - ✅ Query schema definitions
@@ -19,7 +20,7 @@ The `spec_read` tool is the gateway to querying OpenAPI specifications in the MC
 
 ### Query Full Specification
 
-Retrieve the complete OpenAPI specification document:
+Retrieve the complete OpenAPI specification document in JSON format (default):
 
 ```typescript
 await specReadTool.execute({
@@ -28,6 +29,34 @@ await specReadTool.execute({
   queryType: 'full_spec',
   llmReason: 'User requested complete API specification',
 })
+```
+
+Or retrieve it in YAML format:
+
+```typescript
+await specReadTool.execute({
+  apiId: 'my-api',
+  version: 'v1.0.0',
+  queryType: 'full_spec',
+  format: 'yaml',
+  llmReason: 'User needs specification in YAML format',
+})
+```
+
+**YAML Response:**
+```yaml
+openapi: 3.0.0
+info:
+  title: My API
+  version: 1.0.0
+  description: API description here
+paths:
+  /users:
+    get:
+      summary: Get all users
+      responses:
+        '200':
+          description: Success
 ```
 
 ### List All Endpoints
@@ -236,7 +265,7 @@ await specReadTool.execute({
 
 | Type | Description | Additional Parameters |
 |------|-------------|----------------------|
-| `full_spec` | Returns complete OpenAPI specification | None |
+| `full_spec` | Returns complete OpenAPI specification | `format` (optional: `json` or `yaml`, defaults to `json`) |
 | `endpoints_list` | Lists all endpoints with optional filtering | `method`, `filters` |
 | `endpoint_detail` | Returns details for a specific endpoint | `path` (required), `method` (optional) |
 | `schema_detail` | Returns a schema definition | `schemaName` (required) |
@@ -247,6 +276,7 @@ await specReadTool.execute({
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
+| **format** | enum | Output format for `full_spec`: `json` (default) or `yaml` |
 | **path** | string | Endpoint path (required for `endpoint_detail`) |
 | **method** | enum | HTTP method: `GET`, `POST`, `PUT`, `DELETE`, `PATCH`, `HEAD`, `OPTIONS` |
 | **schemaName** | string | Schema name (required for `schema_detail`) |

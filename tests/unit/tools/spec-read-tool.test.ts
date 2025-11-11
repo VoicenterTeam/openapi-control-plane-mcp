@@ -150,6 +150,76 @@ describe('SpecReadTool', () => {
         })
       ).rejects.toThrow(ToolError)
     })
+
+    it('should return spec in YAML format when format=yaml', async () => {
+      mockSpecManager.loadSpec.mockResolvedValue({ version: '3.0', spec: sampleSpec } as any)
+
+      const result = await tool.execute({
+        apiId: 'test-api',
+        version: 'v1.0.0',
+        queryType: 'full_spec',
+        format: 'yaml',
+      })
+
+      expect(result.success).toBe(true)
+      expect((result.data as any)?.spec).toBeDefined()
+      expect(typeof (result.data as any)?.spec).toBe('string')
+      expect((result.data as any)?.spec).toContain('openapi:')
+      expect((result.data as any)?.spec).toContain('info:')
+      expect((result.data as any)?.spec).toContain('paths:')
+    })
+
+    it('should return spec in JSON format when format=json', async () => {
+      mockSpecManager.loadSpec.mockResolvedValue({ version: '3.0', spec: sampleSpec } as any)
+
+      const result = await tool.execute({
+        apiId: 'test-api',
+        version: 'v1.0.0',
+        queryType: 'full_spec',
+        format: 'json',
+      })
+
+      expect(result.success).toBe(true)
+      expect((result.data as any)?.spec).toEqual(sampleSpec)
+      expect(typeof (result.data as any)?.spec).toBe('object')
+    })
+
+    it('should default to JSON format when format is not specified', async () => {
+      mockSpecManager.loadSpec.mockResolvedValue({ version: '3.0', spec: sampleSpec } as any)
+
+      const result = await tool.execute({
+        apiId: 'test-api',
+        version: 'v1.0.0',
+        queryType: 'full_spec',
+      })
+
+      expect(result.success).toBe(true)
+      expect((result.data as any)?.spec).toEqual(sampleSpec)
+      expect(typeof (result.data as any)?.spec).toBe('object')
+      expect((result.data as any)?.spec.openapi).toBe('3.0.0')
+    })
+
+    it('should produce valid YAML that can be parsed back to original spec', async () => {
+      const yaml = require('js-yaml')
+      mockSpecManager.loadSpec.mockResolvedValue({ version: '3.0', spec: sampleSpec } as any)
+
+      const result = await tool.execute({
+        apiId: 'test-api',
+        version: 'v1.0.0',
+        queryType: 'full_spec',
+        format: 'yaml',
+      })
+
+      expect(result.success).toBe(true)
+      const yamlString = (result.data as any)?.spec
+      expect(typeof yamlString).toBe('string')
+
+      // Parse YAML back to object
+      const parsedSpec = yaml.load(yamlString)
+      
+      // Should match original spec
+      expect(parsedSpec).toEqual(sampleSpec)
+    })
   })
 
   describe('execute - info', () => {

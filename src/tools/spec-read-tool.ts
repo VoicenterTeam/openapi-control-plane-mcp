@@ -10,6 +10,7 @@
 
 import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
+import * as yaml from 'js-yaml'
 import { BaseTool, type BaseToolParams, type ToolResult, type ToolDescription } from '../types/mcp-tool.js'
 import { SpecManager } from '../services/spec-manager.js'
 import { validateApiId, validateVersionTag } from '../utils/validation.js'
@@ -24,6 +25,7 @@ interface SpecReadParams extends BaseToolParams {
   apiId: string
   version: string
   queryType: 'full_spec' | 'endpoints_list' | 'endpoint_detail' | 'schema_detail' | 'info' | 'servers'
+  format?: 'json' | 'yaml'
   path?: string
   method?: string
   schemaName?: string
@@ -40,6 +42,7 @@ const specReadSchema = z.object({
   apiId: z.string().describe('API identifier'),
   version: z.string().describe('Version tag (e.g., v1.0.0)'),
   queryType: z.enum(['full_spec', 'endpoints_list', 'endpoint_detail', 'schema_detail', 'info', 'servers']).describe('Type of information to retrieve'),
+  format: z.enum(['json', 'yaml']).optional().describe('Output format for full_spec (default: json)'),
   path: z.string().optional().describe('Specific endpoint path (required for endpoint_detail)'),
   method: z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']).optional().describe('HTTP method'),
   schemaName: z.string().optional().describe('Schema name (required for schema_detail)'),
@@ -84,7 +87,7 @@ export class SpecReadTool extends BaseTool<SpecReadParams> {
       // Route to appropriate handler
       switch (validated.queryType) {
         case 'full_spec':
-          return this.handleFullSpec(spec)
+          return this.handleFullSpec(spec, validated.format)
         case 'endpoints_list':
           return this.handleEndpointsList(spec, validated.method, validated.filters)
         case 'endpoint_detail':
@@ -111,8 +114,26 @@ export class SpecReadTool extends BaseTool<SpecReadParams> {
 
   /**
    * Returns the full spec
+   * @description Returns the complete OpenAPI specification in the requested format.
+   * Like a shapeshifter, but for data formats. 🦎
+   * @param spec - The OpenAPI specification object
+   * @param format - Output format ('json' or 'yaml'), defaults to 'json'
+   * @returns Tool result with spec in requested format
    */
-  private handleFullSpec(spec: any): ToolResult {
+  private handleFullSpec(spec: any, format?: 'json' | 'yaml'): ToolResult {
+    const outputFormat = format || 'json'
+    
+    if (outputFormat === 'yaml') {
+      // Convert spec to YAML string
+      const yamlSpec = yaml.dump(spec, {
+        indent: 2,
+        lineWidth: -1, // No line wrapping
+        noRefs: true, // Don't use anchors/aliases
+      })
+      return this.success('Full OpenAPI specification retrieved (YAML format)', { spec: yamlSpec })
+    }
+    
+    // Default: return as JSON object
     return this.success('Full OpenAPI specification retrieved', { spec })
   }
 
