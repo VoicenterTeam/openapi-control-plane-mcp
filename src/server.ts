@@ -165,7 +165,7 @@ export async function buildServer() {
     }
   })
 
-  // MCP SSE endpoint
+  // MCP SSE endpoint - GET for connection
   fastify.get('/mcp/sse', async (request, reply) => {
     reply.raw.writeHead(200, {
       'Content-Type': 'text/event-stream',
@@ -187,6 +187,24 @@ export async function buildServer() {
       clearInterval(heartbeat)
       logger.info('SSE client disconnected')
     })
+  })
+
+  // MCP SSE endpoint - POST for initial handshake (Cursor sends POST first)
+  fastify.post('/mcp/sse', async () => {
+    logger.info('MCP SSE POST request received')
+    return {
+      jsonrpc: '2.0',
+      result: {
+        protocolVersion: '2024-11-05',
+        serverInfo: {
+          name: 'openapi-control-plane-mcp',
+          version: '1.0.0',
+        },
+        capabilities: {
+          tools: {},
+        },
+      },
+    }
   })
 
   // MCP message endpoint for SSE transport
