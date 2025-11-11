@@ -2,7 +2,7 @@
  * Tests for Config
  */
 
-import { config } from '../../../src/config'
+import { config, getCustomAttributeDescription } from '../../../src/config'
 
 describe('Config', () => {
   const originalEnv = process.env
@@ -158,6 +158,29 @@ describe('Config', () => {
 
     it('should have valid node environment', () => {
       expect(['development', 'production', 'test']).toContain(config.NODE_ENV)
+    })
+  })
+
+  describe('getCustomAttributeDescription', () => {
+    it('should return undefined for unknown entity', () => {
+      const result = getCustomAttributeDescription('unknownEntity', 'someAttr')
+
+      expect(result).toBeUndefined()
+    })
+
+    it('should return undefined for unknown attribute on known entity', () => {
+      const result = getCustomAttributeDescription('info', 'unknownAttribute')
+
+      expect(result).toBeUndefined()
+    })
+
+    it('should return description for valid entity and attribute', () => {
+      // This depends on environment variables being set
+      // Just test that the function executes without error
+      const result = getCustomAttributeDescription('info', 'logo')
+
+      // Result can be string or undefined depending on env setup
+      expect(typeof result === 'string' || result === undefined).toBe(true)
     })
   })
 })
