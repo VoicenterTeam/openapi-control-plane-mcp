@@ -9,6 +9,7 @@
  */
 
 import { z } from 'zod'
+import { zodToJsonSchema } from 'zod-to-json-schema'
 import { BaseTool, type BaseToolParams, type ToolResult, type ToolDescription } from '../types/mcp-tool.js'
 import { SpecManager } from '../services/spec-manager.js'
 import { validateApiId, validateVersionTag } from '../utils/validation.js'
@@ -229,7 +230,7 @@ export class SpecReadTool extends BaseTool<SpecReadParams> {
     return {
       name: 'spec_read',
       description: 'Read and query OpenAPI specifications. Supports various query types including full spec, endpoints list, endpoint details, schema details, info, and servers.',
-      inputSchema: specReadSchema,
+      inputSchema: zodToJsonSchema(specReadSchema, 'specReadSchema'),
     }
   }
 }

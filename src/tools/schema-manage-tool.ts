@@ -8,6 +8,7 @@
  */
 
 import { z } from 'zod'
+import { zodToJsonSchema } from 'zod-to-json-schema'
 import { BaseTool, type BaseToolParams, type ToolResult, type ToolDescription } from '../types/mcp-tool.js'
 import { SpecManager } from '../services/spec-manager.js'
 import { AuditLogger } from '../services/audit-logger.js'
@@ -308,7 +309,7 @@ export class SchemaManageTool extends BaseTool {
     return {
       name: 'schema_manage',
       description: 'Manage OpenAPI schema definitions (components.schemas). Supports add, update, delete, and list operations. All changes are validated and logged for audit purposes.',
-      inputSchema: schemaManageSchema,
+      inputSchema: zodToJsonSchema(schemaManageSchema, 'schemaManageSchema'),
     }
   }
 }

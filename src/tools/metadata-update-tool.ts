@@ -9,6 +9,7 @@
  */
 
 import { z } from 'zod'
+import { zodToJsonSchema } from 'zod-to-json-schema'
 import { BaseTool, type BaseToolParams, type ToolResult, type ToolDescription } from '../types/mcp-tool.js'
 import { SpecManager } from '../services/spec-manager.js'
 import { AuditLogger } from '../services/audit-logger.js'
@@ -234,7 +235,7 @@ export class MetadataUpdateTool extends BaseTool {
     return {
       name: 'metadata_update',
       description: 'Update API metadata (info section) including title, description, contact, license, and custom x- extensions. All updates are validated and logged for audit purposes.',
-      inputSchema: metadataUpdateSchema,
+      inputSchema: zodToJsonSchema(metadataUpdateSchema, 'metadataUpdateSchema'),
     }
   }
 }

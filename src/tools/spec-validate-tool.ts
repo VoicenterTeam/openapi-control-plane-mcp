@@ -8,6 +8,7 @@
  */
 
 import { z } from 'zod'
+import { zodToJsonSchema } from 'zod-to-json-schema'
 import { BaseTool, BaseToolParams, ToolResult, ToolDescription } from '../types/mcp-tool.js'
 import type { ValidationService } from '../services/validation-service.js'
 import { createApiId, createVersionTag } from '../types/openapi.js'
@@ -134,7 +135,7 @@ export class SpecValidateTool extends BaseTool<SpecValidateParams> {
       name: 'spec_validate',
       description:
         'Validates OpenAPI specifications using Spectral. Reports errors, warnings, info, and hints. Helps ensure spec quality and best practices compliance.',
-      inputSchema: specValidateSchema,
+      inputSchema: zodToJsonSchema(specValidateSchema, 'specValidateSchema'),
     }
   }
 }
