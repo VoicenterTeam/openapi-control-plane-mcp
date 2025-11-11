@@ -24,6 +24,29 @@ describe('SecurityConfigureTool', () => {
     tool = new SecurityConfigureTool(mockSpecManager, mockAuditLogger)
   })
 
+  describe('internal validation', () => {
+    it('should handle duplicate security scheme', async () => {
+      mockSpecManager.loadSpec.mockResolvedValue({
+        version: '3.0',
+        spec: {
+          components: {
+            securitySchemes: {
+              existingScheme: { type: 'apiKey' },
+            },
+          },
+        },
+      } as any)
+
+      await expect(tool.execute({
+        apiId,
+        version,
+        operation: 'add_scheme',
+        schemeName: 'existingScheme',
+        scheme: { type: 'http' },
+      })).rejects.toThrow('Security scheme existingScheme already exists')
+    })
+  })
+
   describe('list_schemes', () => {
     it('should list security schemes', async () => {
       mockSpecManager.loadSpec.mockResolvedValue({

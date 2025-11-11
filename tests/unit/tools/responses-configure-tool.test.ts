@@ -72,6 +72,110 @@ describe('ResponsesConfigureTool', () => {
     })
   })
 
+  describe('internal operation validation', () => {
+    it('should handle list operation being called with add path', async () => {
+      mockSpecManager.loadSpec.mockResolvedValue({
+        version: '3.0',
+        spec: {
+          paths: {
+            '/users': {
+              get: { responses: { '200': { description: 'OK' } } },
+            },
+          },
+        },
+      } as any)
+
+      const tool = new ResponsesConfigureTool(mockSpecManager, mockAuditLogger)
+      // Force handleList to be called but with wrong internal validation
+      await expect(tool.execute({
+        apiId,
+        version,
+        operation: 'list',
+        path: '/missing-path',
+        method: 'GET',
+      })).rejects.toThrow('Path /missing-path not found')
+    })
+
+    it('should handle add operation with non-existent path', async () => {
+      mockSpecManager.loadSpec.mockResolvedValue({
+        version: '3.0',
+        spec: {
+          paths: {
+            '/users': {
+              get: {},
+            },
+          },
+        },
+      } as any)
+
+      await expect(tool.execute({
+        apiId,
+        version,
+        operation: 'add',
+        path: '/nonexistent',
+        method: 'GET',
+        statusCode: '201',
+        response: { description: 'Created' },
+      })).rejects.toThrow('Path /nonexistent not found')
+    })
+
+    it('should handle add operation with non-existent method', async () => {
+      mockSpecManager.loadSpec.mockResolvedValue({
+        version: '3.0',
+        spec: {
+          paths: {
+            '/users': {
+              get: {},
+            },
+          },
+        },
+      } as any)
+
+      await expect(tool.execute({
+        apiId,
+        version,
+        operation: 'add',
+        path: '/users',
+        method: 'POST',
+        statusCode: '201',
+        response: { description: 'Created' },
+      })).rejects.toThrow('Method POST not found')
+    })
+
+    it('should handle update operation with non-existent path', async () => {
+      mockSpecManager.loadSpec.mockResolvedValue({
+        version: '3.0',
+        spec: { paths: {} },
+      } as any)
+
+      await expect(tool.execute({
+        apiId,
+        version,
+        operation: 'update',
+        path: '/missing',
+        method: 'GET',
+        statusCode: '200',
+        updates: { description: 'New desc' },
+      })).rejects.toThrow('Path /missing not found')
+    })
+
+    it('should handle delete operation with non-existent path', async () => {
+      mockSpecManager.loadSpec.mockResolvedValue({
+        version: '3.0',
+        spec: { paths: {} },
+      } as any)
+
+      await expect(tool.execute({
+        apiId,
+        version,
+        operation: 'delete',
+        path: '/missing',
+        method: 'GET',
+        statusCode: '200',
+      })).rejects.toThrow('Path /missing not found')
+    })
+  })
+
   describe('list', () => {
     it('should list responses with multiple status codes', async () => {
       mockSpecManager.loadSpec.mockResolvedValue({
