@@ -24,6 +24,54 @@ describe('ResponsesConfigureTool', () => {
     tool = new ResponsesConfigureTool(mockSpecManager, mockAuditLogger)
   })
 
+  describe('validation', () => {
+    it('should reject unknown operation', async () => {
+      await expect(tool.execute({
+        apiId,
+        version,
+        operation: 'unknown' as any,
+        path: '/users',
+        method: 'GET',
+      })).rejects.toThrow('Validation failed')
+    })
+
+    it('should handle spec manager errors gracefully', async () => {
+      mockSpecManager.loadSpec.mockRejectedValue(new Error('Database error'))
+
+      await expect(tool.execute({
+        apiId,
+        version,
+        operation: 'list',
+        path: '/users',
+        method: 'GET',
+      })).rejects.toThrow('Responses configure failed')
+    })
+
+    it('should wrap saveSpec errors', async () => {
+      mockSpecManager.loadSpec.mockResolvedValue({
+        version: '3.0',
+        spec: {
+          paths: {
+            '/users': {
+              get: { responses: {} },
+            },
+          },
+        },
+      } as any)
+      mockSpecManager.saveSpec.mockRejectedValue(new Error('Write failed'))
+
+      await expect(tool.execute({
+        apiId,
+        version,
+        operation: 'add',
+        path: '/users',
+        method: 'GET',
+        statusCode: '200',
+        response: { description: 'Success' },
+      })).rejects.toThrow('Responses configure failed')
+    })
+  })
+
   describe('list', () => {
     it('should list responses with multiple status codes', async () => {
       mockSpecManager.loadSpec.mockResolvedValue({

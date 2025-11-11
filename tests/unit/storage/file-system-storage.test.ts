@@ -121,6 +121,65 @@ describe('FileSystemStorage', () => {
     })
   })
 
+  describe('list', () => {
+    it('should list files recursively', async () => {
+      const mockEntries = [
+        { name: 'file1.json', isDirectory: () => false },
+        { name: 'subdir', isDirectory: () => true },
+        { name: 'file2.json', isDirectory: () => false },
+      ];
+      const mockSubdirEntries = [
+        { name: 'nested.json', isDirectory: () => false },
+      ];
+
+      (fs.readdir as jest.MockedFunction<typeof fs.readdir>)
+        .mockResolvedValueOnce(mockEntries as any)
+        .mockResolvedValueOnce(mockSubdirEntries as any)
+
+      const result = await storage.list('test/prefix')
+
+      expect(result).toHaveLength(3)
+      expect(result.some(f => f.includes('file1.json'))).toBe(true)
+      expect(result.some(f => f.includes('file2.json'))).toBe(true)
+      expect(result.some(f => f.includes('nested.json'))).toBe(true)
+    })
+
+    it('should return empty array when directory does not exist', async () => {
+      const error = new Error('ENOENT') as NodeJS.ErrnoException
+      error.code = 'ENOENT'
+      ;(fs.readdir as jest.MockedFunction<typeof fs.readdir>).mockRejectedValue(error)
+
+      const result = await storage.list('nonexistent')
+
+      expect(result).toEqual([])
+    })
+
+    it('should throw StorageError on list failure', async () => {
+      const error = new Error('Permission denied')
+      ;(fs.readdir as jest.MockedFunction<typeof fs.readdir>).mockRejectedValue(error)
+
+      await expect(storage.list('test')).rejects.toThrow(StorageError)
+    })
+
+    it('should handle nested directories', async () => {
+      const mockLevel1 = [
+        { name: 'dir1', isDirectory: () => true },
+      ];
+      const mockLevel2 = [
+        { name: 'file.json', isDirectory: () => false },
+      ];
+
+      (fs.readdir as jest.MockedFunction<typeof fs.readdir>)
+        .mockResolvedValueOnce(mockLevel1 as any)
+        .mockResolvedValueOnce(mockLevel2 as any)
+
+      const result = await storage.list('')
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toContain('file.json')
+    })
+  })
+
   describe('exists', () => {
     it('should return true if file exists', async () => {
       ;(fs.access as jest.MockedFunction<typeof fs.access>).mockResolvedValue()
