@@ -4,7 +4,8 @@
 
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
-[![Tests](https://img.shields.io/badge/tests-434%20passing-success)](./tests)
+[![Tests](https://img.shields.io/badge/tests-531%20passing-success)](./tests)
+[![Coverage](https://img.shields.io/badge/coverage-82.31%25%20branches-brightgreen)](./docs/coverage-reports)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ## 🎯 Overview
@@ -20,7 +21,7 @@ A powerful Model Context Protocol (MCP) server that enables AI assistants (like 
 - **🚀 Dual Transport**: SSE/HTTP and stdio protocols supported
 - **💾 Storage Abstraction**: File-based storage (easily extensible to S3/Redis)
 - **🎨 Custom Extensions**: Support for OpenAPI `x-` attributes
-- **📊 434 Tests**: Comprehensive unit and integration test coverage
+- **📊 531 Tests (82.31% coverage)**: Professional-grade test coverage
 
 ## 🚀 Quick Start
 
@@ -355,6 +356,31 @@ MIT License - see [LICENSE](LICENSE) file for details
 - Built with [Model Context Protocol SDK](https://github.com/modelcontextprotocol)
 - Validation powered by [Spectral](https://stoplight.io/open-source/spectral)
 - OpenAPI parsing by [@apidevtools/swagger-parser](https://github.com/APIDevTools/swagger-parser)
+
+## 📚 Documentation
+
+Comprehensive documentation is available in the [`docs/`](./docs) directory:
+
+### Quick Links
+- 🚀 **[Quick Start Guide](docs/setup-guides/QUICKSTART.md)** - Get started with Cursor IDE
+- 🛠️ **[Developer Guide](docs/AGENTS.md)** - Development setup and conventions
+- 🔧 **[HTTP API Testing](docs/setup-guides/HTTP-TESTING.md)** - Test REST endpoints
+- 📊 **[Coverage Report](docs/coverage-reports/COVERAGE-82-PERCENT.md)** - Testing methodology
+- 🏗️ **[Architecture](docs/architecture/)** - System design and patterns
+
+### Tool Documentation
+- [spec_read](docs/tool-spec-read/) - Read OpenAPI specifications
+- [spec_validate](docs/tool-spec-validate/) - Validate specs with Spectral
+- [metadata_update](docs/tool-metadata-update/) - Update API metadata
+- [schema_manage](docs/tool-schema-manage/) - Manage schemas
+- [endpoint_manage](docs/tool-endpoint-manage/) - Manage endpoints
+- [version_control](docs/tool-spec-version/) - Version management
+- [parameters_configure](docs/tool-parameters-configure/) - Configure parameters
+- [responses_configure](docs/tool-responses-configure/) - Configure responses
+- [security_configure](docs/tool-security-configure/) - Security setup
+- [references_manage](docs/tool-references-manage/) - Manage $ref references
+
+See **[docs/README.md](docs/README.md)** for the complete documentation index.
 
 ## 📞 Support
 
