@@ -1,31 +1,15 @@
 # =====================================
 # Dockerfile - OpenAPI Control Plane MCP
-# Base: Debian 12 (Bookworm) Slim
-# Node.js: 22.21.1
+# Base: Debian 12 (Bookworm) Slim with Node.js 22
 # Process Manager: PM2
 # =====================================
 
-FROM debian:12-slim
+FROM node:22-bookworm-slim
 
 # Set working directory
 WORKDIR /app
 
-# Install dependencies and Node.js 22.21.1
-# Using NodeSource official repository for Debian
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    ca-certificates \
-    curl \
-    gnupg \
-    && mkdir -p /etc/apt/keyrings \
-    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
-    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
-    && apt-get update \
-    && apt-get install -y nodejs=22.21.1-1nodesource1 \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# Verify Node.js and npm installation
+# Verify Node.js and npm installation (comes with base image)
 RUN node --version && npm --version
 
 # Install PM2 globally
