@@ -5,8 +5,7 @@
 
 # Dependencies (will be installed in container)
 node_modules/
-package-lock.json
-npm-debug.log*
+# Note: package-lock.json is needed for npm ci in Docker build
 yarn.lock
 yarn-debug.log*
 yarn-error.log*
@@ -20,6 +19,7 @@ build/
 # Logs
 logs/
 *.log
+npm-debug.log*
 combined.log
 error.log
 access.log
