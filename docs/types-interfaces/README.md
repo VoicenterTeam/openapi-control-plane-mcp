@@ -2,7 +2,7 @@
 
 ## Overview
 
-This module contains all TypeScript type definitions for the OpenAPI Control Plane MCP Server. Types are organized by domain and provide strong typing throughout the application.
+This module contains all TypeScript type definitions for the OpenAPI Control Panel MCP Server. Types are organized by domain and provide strong typing throughout the application.
 
 ## Type Modules
 

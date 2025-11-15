@@ -54,7 +54,7 @@ Update your Cursor MCP config to use HTTP transport:
 ```json
 {
   "mcpServers": {
-    "openapi-control-plane": {
+    "openapi-control-panel": {
       "url": "http://localhost:3000/mcp/sse",
       "transport": "sse"
     }
@@ -66,11 +66,11 @@ Update your Cursor MCP config to use HTTP transport:
 ```json
 {
   "mcpServers": {
-    "openapi-control-plane": {
+    "openapi-control-panel": {
       "command": "node",
-      "args": ["D:\\source\\openapi-control-plane-mcp\\dist\\mcp-server.js"],
+      "args": ["D:\\source\\openapi-control-panel-mcp\\dist\\mcp-server.js"],
       "env": {
-        "STORAGE_PATH": "D:\\source\\openapi-control-plane-mcp\\data",
+        "STORAGE_PATH": "D:\\source\\openapi-control-panel-mcp\\data",
         "NODE_ENV": "development"
       }
     }

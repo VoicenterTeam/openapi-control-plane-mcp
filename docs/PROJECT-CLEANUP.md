@@ -79,7 +79,7 @@ Removed all test API directories with `v*.0.0` folders:
 ## 📊 Final Project Structure
 
 ```
-openapi-control-plane-mcp/
+openapi-control-panel-mcp/
 ├── README.md                 # Main entry point
 ├── package.json              # NPM configuration
 ├── tsconfig.json             # TypeScript config

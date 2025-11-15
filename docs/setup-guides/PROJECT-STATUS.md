@@ -1,4 +1,4 @@
-# OpenAPI Control Plane MCP Server - Project Status
+# OpenAPI Control Panel MCP Server - Project Status
 
 **Version:** 1.0.1  
 **Status:** ✅ Production Ready  
@@ -6,7 +6,7 @@
 
 ## 🎉 Project Complete!
 
-The OpenAPI Control Plane MCP Server is now **production-ready** with full Cursor IDE integration support via SSE transport.
+The OpenAPI Control Panel MCP Server is now **production-ready** with full Cursor IDE integration support via SSE transport.
 
 ## 📊 Current Status
 
@@ -59,7 +59,7 @@ Duration:    < 30 seconds for full suite
 ## 📁 Project Structure
 
 ```
-openapi-control-plane-mcp/
+openapi-control-panel-mcp/
 ├── src/                          # Source code
 │   ├── config/                   # Configuration management
 │   ├── services/                 # Business logic (5 services)

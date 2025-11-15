@@ -1,4 +1,4 @@
-# OpenAPI Control Plane MCP Server
+# OpenAPI Control Panel MCP Server
 
 > **Version 1.0.1** - Production-ready MCP server for OpenAPI/Swagger specification management with LLM-driven editing capabilities.
 
@@ -30,7 +30,7 @@ A powerful Model Context Protocol (MCP) server that enables AI assistants (like 
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd openapi-control-plane-mcp
+cd openapi-control-panel-mcp
 
 # Install dependencies
 npm install
@@ -238,7 +238,7 @@ File System (data/)
 ## 📁 Project Structure
 
 ```
-openapi-control-plane-mcp/
+openapi-control-panel-mcp/
 ├── src/
 │   ├── config/           # Configuration management
 │   ├── services/         # Business logic services

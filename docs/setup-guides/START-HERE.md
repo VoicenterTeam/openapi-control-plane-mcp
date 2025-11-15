@@ -9,13 +9,13 @@ The MCP SDK had installation issues. I've removed the dependency and the server 
 ### Open PowerShell/Terminal and run:
 
 ```powershell
-cd D:\source\openapi-control-plane-mcp
+cd D:\source\openapi-control-panel-mcp
 node dist/server.js
 ```
 
 You should see:
 ```
-🚀 OpenAPI Control Plane MCP Server started!
+🚀 OpenAPI Control Panel MCP Server started!
 Server listening on http://localhost:3000
 ```
 

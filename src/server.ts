@@ -204,7 +204,7 @@ export async function buildServer() {
           result: {
             protocolVersion: '2024-11-05',
             serverInfo: {
-              name: 'openapi-control-plane-mcp',
+              name: 'openapi-control-panel-mcp',
               version: '1.0.1',
             },
             capabilities: {
@@ -484,7 +484,7 @@ async function start() {
         host: config.HOST,
         env: config.NODE_ENV,
       },
-      `🚀 OpenAPI Control Plane MCP Server started!`
+      `🚀 OpenAPI Control Panel MCP Server started!`
     )
 
     // Ensure data directories exist

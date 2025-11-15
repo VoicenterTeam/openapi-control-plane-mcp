@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file provides guidance for AI coding agents working on the OpenAPI Control Plane MCP Server project.
+This file provides guidance for AI coding agents working on the OpenAPI Control Panel MCP Server project.
 
 ## Setup Commands
 

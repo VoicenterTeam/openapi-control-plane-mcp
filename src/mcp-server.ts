@@ -58,7 +58,7 @@ const tools = [
 // Create MCP server
 const server = new Server(
   {
-    name: 'openapi-control-plane-mcp',
+    name: 'openapi-control-panel-mcp',
     version: '1.0.0',
   },
   {
@@ -106,7 +106,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
 async function main() {
   const transport = new StdioServerTransport()
   await server.connect(transport)
-  console.error('OpenAPI Control Plane MCP Server running on stdio')
+  console.error('OpenAPI Control Panel MCP Server running on stdio')
 }
 
 main().catch(console.error)

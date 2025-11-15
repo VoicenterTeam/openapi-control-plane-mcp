@@ -2,7 +2,7 @@
 
 ## Overview
 
-The OpenAPI Control Plane MCP Server can be deployed using Docker with Node.js and PM2 for process management.
+The OpenAPI Control Panel MCP Server can be deployed using Docker with Node.js and PM2 for process management.
 
 ## Dockerfile
 

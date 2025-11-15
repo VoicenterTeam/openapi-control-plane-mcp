@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `metadata_update` tool is the first write operation implemented in the OpenAPI Control Plane MCP Server. It enables updating API metadata (the `info` section of an OpenAPI specification) with full validation and audit logging.
+The `metadata_update` tool is the first write operation implemented in the OpenAPI Control Panel MCP Server. It enables updating API metadata (the `info` section of an OpenAPI specification) with full validation and audit logging.
 
 ## Features
 

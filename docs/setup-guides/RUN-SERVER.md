@@ -10,7 +10,7 @@ This will run the server in your current terminal so you can see any error messa
 
 If it works, you should see:
 ```
-🚀 OpenAPI Control Plane MCP Server started!
+🚀 OpenAPI Control Panel MCP Server started!
 ```
 
 Then in a NEW terminal, test it:

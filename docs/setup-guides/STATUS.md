@@ -26,7 +26,7 @@ node dist/server.js
 
 ### Step 2: If it works, you'll see:
 ```
-🚀 OpenAPI Control Plane MCP Server started!
+🚀 OpenAPI Control Panel MCP Server started!
 ```
 
 ### Step 3: Test it (in a NEW terminal):

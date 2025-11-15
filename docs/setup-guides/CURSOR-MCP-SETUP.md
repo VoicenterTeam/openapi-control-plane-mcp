@@ -24,13 +24,13 @@ Add this configuration to your Cursor MCP settings:
 ```json
 {
   "mcpServers": {
-    "openapi-control-plane": {
+    "openapi-control-panel": {
       "command": "node",
       "args": [
         "D:\\source\\openapi-control-plane-mcp\\dist\\mcp-server.js"
       ],
       "env": {
-        "STORAGE_PATH": "D:\\source\\openapi-control-plane-mcp\\data",
+        "STORAGE_PATH": "D:\\source\\openapi-control-panel-mcp\\data",
         "NODE_ENV": "development"
       }
     }
@@ -38,7 +38,7 @@ Add this configuration to your Cursor MCP settings:
 }
 ```
 
-**IMPORTANT:** Replace `D:\\source\\openapi-control-plane-mcp` with your actual project path!
+**IMPORTANT:** Replace `D:\\source\\openapi-control-panel-mcp` with your actual project path!
 
 ### Step 3: Verify the Server Works
 
@@ -50,7 +50,7 @@ npm run build
 node dist/mcp-server.js
 ```
 
-You should see: `OpenAPI Control Plane MCP Server running on stdio`
+You should see: `OpenAPI Control Panel MCP Server running on stdio`
 
 Press `Ctrl+C` to stop.
 
@@ -81,7 +81,7 @@ Press `Ctrl+C` to stop.
 
 2. **Verify the server path:**
    ```powershell
-   Test-Path "D:\source\openapi-control-plane-mcp\dist\mcp-server.js"
+   Test-Path "D:\source\openapi-control-panel-mcp\dist\mcp-server.js"
    ```
    Should return `True`
 

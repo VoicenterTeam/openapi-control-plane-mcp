@@ -155,7 +155,7 @@ describe('MCP Server', () => {
     const data = await response.json()
     
     expect(data.result.protocolVersion).toBe('2024-11-05')
-    expect(data.result.serverInfo.name).toBe('openapi-control-plane-mcp')
+    expect(data.result.serverInfo.name).toBe('openapi-control-panel-mcp')
   })
   
   it('should list tools', async () => {

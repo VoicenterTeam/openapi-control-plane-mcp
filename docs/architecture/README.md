@@ -1,8 +1,8 @@
-# OpenAPI Control Plane MCP - Architecture
+# OpenAPI Control Panel MCP - Architecture
 
 ## Overview
 
-The OpenAPI Control Plane MCP Server is built with a clean, modular architecture following Uncle Bob's clean code principles. The system is designed for extensibility, testability, and maintainability.
+The OpenAPI Control Panel MCP Server is built with a clean, modular architecture following Uncle Bob's clean code principles. The system is designed for extensibility, testability, and maintainability.
 
 ## System Architecture
 

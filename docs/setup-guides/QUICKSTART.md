@@ -29,13 +29,13 @@ Copy its contents into your Cursor MCP settings file:
 ```json
 {
   "mcpServers": {
-    "openapi-control-plane": {
+    "openapi-control-panel": {
       "command": "node",
       "args": [
         "D:\\source\\openapi-control-plane-mcp\\dist\\mcp-server.js"
       ],
       "env": {
-        "STORAGE_PATH": "D:\\source\\openapi-control-plane-mcp\\data",
+        "STORAGE_PATH": "D:\\source\\openapi-control-panel-mcp\\data",
         "NODE_ENV": "development"
       }
     }

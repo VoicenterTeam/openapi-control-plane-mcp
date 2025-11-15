@@ -1,6 +1,6 @@
-# OpenAPI Control Plane MCP - Documentation
+# OpenAPI Control Panel MCP - Documentation
 
-Welcome to the documentation for the OpenAPI Control Plane MCP Server!
+Welcome to the documentation for the OpenAPI Control Panel MCP Server!
 
 ## 📚 Documentation Structure
 

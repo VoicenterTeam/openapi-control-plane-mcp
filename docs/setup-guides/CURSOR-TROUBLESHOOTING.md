@@ -67,13 +67,13 @@ Replace it with:
 ```json
 {
   "mcpServers": {
-    "openapi-control-plane": {
+    "openapi-control-panel": {
       "command": "node",
       "args": [
-        "D:\\source\\openapi-control-plane-mcp\\dist\\mcp-server.js"
+        "D:\\source\\openapi-control-panel-mcp\\dist\\mcp-server.js"
       ],
       "env": {
-        "STORAGE_PATH": "D:\\source\\openapi-control-plane-mcp\\data",
+        "STORAGE_PATH": "D:\\source\\openapi-control-panel-mcp\\data",
         "NODE_ENV": "development"
       }
     }
@@ -81,7 +81,7 @@ Replace it with:
 }
 ```
 
-**IMPORTANT:** Replace `D:\\source\\openapi-control-plane-mcp` with your actual project path!
+**IMPORTANT:** Replace `D:\\source\\openapi-control-panel-mcp` with your actual project path!
 
 ### Step 4: Stop the HTTP Server
 
@@ -98,12 +98,12 @@ Before restarting Cursor, verify the stdio server works:
 
 ```powershell
 # From project root
-cd D:\source\openapi-control-plane-mcp
+cd D:\source\openapi-control-panel-mcp
 npm run build
 
 # Test the server
 node dist/mcp-server.js
-# Should output: "OpenAPI Control Plane MCP Server running on stdio"
+# Should output: "OpenAPI Control Panel MCP Server running on stdio"
 ```
 
 Press `Ctrl+C` to stop.
@@ -121,7 +121,7 @@ Press `Ctrl+C` to stop.
 After restart, you should see:
 
 ```
-openapi-control-plane
+openapi-control-panel
   ✓ 10 tools
   - spec_read
   - spec_validate
@@ -150,7 +150,7 @@ If Cursor doesn't have built-in MCP support, you might need an extension:
 
 ```powershell
 # Check workspace
-Get-ChildItem -Path "D:\source\openapi-control-plane-mcp" -Filter "*.json" -Recurse | 
+Get-ChildItem -Path "D:\source\openapi-control-panel-mcp" -Filter "*.json" -Recurse | 
   Select-Object FullName | 
   Where-Object { $_ -like "*mcp*" -or $_ -like "*cursor*" }
 ```
@@ -190,7 +190,7 @@ When you find the MCP config, check:
 ```json
 {
   "command": "C:\\Program Files\\nodejs\\node.exe",
-  "args": ["D:\\source\\openapi-control-plane-mcp\\dist\\mcp-server.js"]
+  "args": ["D:\\source\\openapi-control-panel-mcp\\dist\\mcp-server.js"]
 }
 ```
 

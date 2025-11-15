@@ -2,12 +2,12 @@
 
 ## Overview
 
-This document covers the initial project setup, tooling configuration, and development environment for the OpenAPI Control Plane MCP Server.
+This document covers the initial project setup, tooling configuration, and development environment for the OpenAPI Control Panel MCP Server.
 
 ## Project Structure
 
 ```
-openapi-control-plane-mcp/
+openapi-control-panel-mcp/
 ├── src/                    # Source code
 │   ├── tools/             # MCP tools (spec_read, spec_validate, etc.)
 │   ├── services/          # Business logic (spec-manager, version-manager, etc.)

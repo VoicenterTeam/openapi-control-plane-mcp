@@ -1,6 +1,6 @@
 # Cursor IDE Integration Guide
 
-> **OpenAPI Control Plane MCP Server v1.0.1**
+> **OpenAPI Control Panel MCP Server v1.0.1**
 
 This guide shows how to integrate the OpenAPI MCP Server with Cursor IDE for AI-assisted API development.
 
@@ -19,7 +19,7 @@ Once integrated, you can ask Cursor's AI to:
 ### Step 1: Install and Build
 
 ```bash
-cd openapi-control-plane-mcp
+cd openapi-control-panel-mcp
 npm install
 npm run build
 ```
@@ -62,7 +62,7 @@ npm run dev
 You should see:
 ```
 🚀 Server listening on http://0.0.0.0:3000
-OpenAPI Control Plane MCP Server started!
+OpenAPI Control Panel MCP Server started!
 ```
 
 ### Step 4: Restart Cursor
