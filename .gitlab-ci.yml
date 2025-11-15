@@ -1,0 +1,30 @@
+stages:
+    - build_stage
+    - deploy_stage
+variables:
+  IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  DIND_IMAGE: registry.voicenter.co/voicenter/repobuildsync/docker-dind/docker:dind
+
+build:
+    stage: build_stage
+    services:
+    - name: $DIND_IMAGE
+      alias: docker
+    variables:
+      DOCKER_DRIVER: overlay2
+      DOCKER_HOST: tcp://docker:2375
+      DOCKER_TLS_CERTDIR: ""
+    script:
+    - apk update && apk add jq
+    - export VERSION=`jq -r ".version" < ./package.json`
+    - export PROJECT_NAME=`jq -r ".name" < ./package.json`
+    # login to docker
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+    # build and tag docker image
+    - docker build --build-arg PROJECT_NAME=$PROJECT_NAME -t $CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH.$VERSION -t $CI_REGISTRY_IMAGE:latest .
+    # publish finished image
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH.$VERSION
+    - docker push $CI_REGISTRY_IMAGE:latest
+
+    tags:
+        - gitRunCT
