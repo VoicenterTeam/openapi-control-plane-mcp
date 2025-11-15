@@ -92,6 +92,6 @@ backups/
 .prettierignore
 .eslintrc*
 .eslintignore
-tsconfig*.json
 jest.config.*
+# Note: tsconfig.json is needed for the Docker build, so it's NOT excluded
 
