@@ -23,10 +23,82 @@
                   {{ spec.info.description }}
                 </p>
                 <div class="mt-4 flex items-center space-x-4">
-                  <VersionBadge :version="metadata.current_version" current />
+                  <div class="flex items-center space-x-2">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">Version:</span>
+                    <USelectMenu
+                      v-model="selectedVersion"
+                      :options="versionOptions"
+                      value-attribute="value"
+                      class="w-96"
+                      :loading="versionsLoading"
+                    >
+                      <template #label>
+                        <div class="flex items-center space-x-2">
+                          <VersionBadge :version="selectedVersion || metadata?.current_version" />
+                          <span class="text-xs text-gray-500 dark:text-gray-400" v-if="selectedVersionData">
+                            ({{ selectedVersionData.stats.endpoint_count }} endpoints, 
+                            {{ selectedVersionData.stats.schema_count }} schemas)
+                          </span>
+                        </div>
+                      </template>
+                      
+                      <template #option="{ option }">
+                        <div class="flex flex-col py-1">
+                          <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                              <VersionBadge :version="option.version" />
+                              <span 
+                                v-if="option.changes.breaking_changes.length > 0" 
+                                class="px-1.5 py-0.5 text-xs font-medium rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                              >
+                                Breaking
+                              </span>
+                            </div>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">
+                              {{ formatDate(option.created_at) }}
+                            </span>
+                          </div>
+                          
+                          <div class="flex items-center space-x-3 mt-1 text-xs text-gray-600 dark:text-gray-400">
+                            <span>{{ option.stats.endpoint_count }} endpoints</span>
+                            <span>•</span>
+                            <span>{{ option.stats.schema_count }} schemas</span>
+                            <span v-if="option.changes.breaking_changes.length > 0">•</span>
+                            <span v-if="option.changes.breaking_changes.length > 0" class="text-red-600 dark:text-red-400">
+                              {{ option.changes.breaking_changes.length }} breaking changes
+                            </span>
+                          </div>
+                          
+                          <p 
+                            v-if="option.description" 
+                            class="mt-1 text-xs text-gray-500 dark:text-gray-400 truncate"
+                          >
+                            {{ option.description }}
+                          </p>
+                          
+                          <div 
+                            v-if="option.changes.endpoints_added.length > 0 || option.changes.endpoints_modified.length > 0 || option.changes.endpoints_deleted.length > 0"
+                            class="flex items-center space-x-2 mt-1 text-xs"
+                          >
+                            <span v-if="option.changes.endpoints_added.length > 0" class="text-green-600 dark:text-green-400">
+                              +{{ option.changes.endpoints_added.length }}
+                            </span>
+                            <span v-if="option.changes.endpoints_modified.length > 0" class="text-yellow-600 dark:text-yellow-400">
+                              ~{{ option.changes.endpoints_modified.length }}
+                            </span>
+                            <span v-if="option.changes.endpoints_deleted.length > 0" class="text-red-600 dark:text-red-400">
+                              -{{ option.changes.endpoints_deleted.length }}
+                            </span>
+                          </div>
+                        </div>
+                      </template>
+                    </USelectMenu>
+                  </div>
+                  
                   <span class="text-sm text-gray-600 dark:text-gray-400">
                     Owner: {{ metadata.owner }}
                   </span>
+                  
                   <NuxtLink 
                     :to="`/specs/${apiId}/versions`"
                     class="text-sm text-voicenter-primary hover:underline"
@@ -116,13 +188,65 @@
 </template>
 
 <script setup lang="ts">
+import type { VersionMetadata } from '~/types/api'
+
 const route = useRoute()
 const apiId = route.params.apiId as string
 
-const { spec, metadata, loading, error, endpoints, endpointsByTag, schemas, fetchSpec } = useSpecDetail(apiId)
+// Track selected version
+const selectedVersion = ref<string | null>(null)
 
-onMounted(() => {
-  fetchSpec()
+// Initialize spec detail
+const { spec, metadata, loading, error, endpoints, endpointsByTag, schemas, fetchSpec } = useSpecDetail(
+  apiId,
+  computed(() => selectedVersion.value || undefined)
+)
+
+// Fetch versions for dropdown
+const { versions, loading: versionsLoading, fetchVersions } = useVersions(apiId)
+
+// Computed options for dropdown (full version objects)
+const versionOptions = computed(() => {
+  return versions.value.map(v => ({
+    value: v.version,
+    label: v.version,
+    ...v
+  }))
+})
+
+// Get full data for selected version
+const selectedVersionData = computed(() => {
+  return versions.value.find(v => v.version === selectedVersion.value)
+})
+
+// Format date helper
+function formatDate(dateString: string): string {
+  const date = new Date(dateString)
+  return date.toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'short', 
+    day: 'numeric' 
+  })
+}
+
+// Watch for version changes and refetch
+watch(selectedVersion, async (newVersion) => {
+  if (newVersion) {
+    await fetchSpec()
+  }
+})
+
+onMounted(async () => {
+  // Fetch initial spec data
+  await fetchSpec()
+  
+  // Fetch versions for dropdown
+  await fetchVersions()
+  
+  // Set initial selected version to current version
+  if (metadata.value) {
+    selectedVersion.value = metadata.value.current_version
+  }
 })
 
 function getMethodClass(method: string): string {

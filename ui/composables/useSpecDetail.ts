@@ -6,7 +6,7 @@
 
 import type { ApiId, VersionTag, OpenAPISpec, ApiMetadata } from '~/types/api'
 
-export function useSpecDetail(apiId: ApiId, version?: VersionTag) {
+export function useSpecDetail(apiId: ApiId, version?: Ref<VersionTag | undefined> | VersionTag) {
   const api = useApi()
   
   const spec = ref<OpenAPISpec | null>(null)
@@ -26,7 +26,7 @@ export function useSpecDetail(apiId: ApiId, version?: VersionTag) {
       metadata.value = await api.get<ApiMetadata>(`/specs/${apiId}`)
       
       // Fetch spec content
-      const versionToFetch = version || metadata.value.current_version
+      const versionToFetch = (typeof version === 'object' ? version.value : version) || metadata.value.current_version
       const specData = await api.get<{ spec: OpenAPISpec }>(`/specs/${apiId}/versions/${versionToFetch}`)
       spec.value = specData.spec
     } catch (err: any) {
