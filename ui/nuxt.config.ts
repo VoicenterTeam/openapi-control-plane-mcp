@@ -4,7 +4,7 @@ export default defineNuxtConfig({
   
   modules: ['@nuxt/ui'],
   
-  ssr: true,
+  ssr: false, // Changed to false for static generation
   
   app: {
     head: {
@@ -28,6 +28,7 @@ export default defineNuxtConfig({
   },
 
   nitro: {
+    preset: 'static', // Added for static generation
     devProxy: {
       '/api': {
         target: 'http://localhost:3001/api',

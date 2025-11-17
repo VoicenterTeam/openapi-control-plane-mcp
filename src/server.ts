@@ -29,6 +29,9 @@ import {
   ReferencesManageTool,
 } from './tools/index.js'
 import { logger } from './utils/logger.js'
+import fastifyStatic from '@fastify/static'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
 /**
  * Builds and configures the Fastify server
@@ -81,6 +84,24 @@ export async function buildServer() {
       tools: 10,
     }
   })
+
+  // Serve static UI files from Nuxt build
+  const __filename = fileURLToPath(import.meta.url)
+  const __dirname = path.dirname(__filename)
+  const uiDistPath = path.resolve(__dirname, '../ui/.output/public')
+  
+  logger.info({ uiDistPath }, 'Registering static file serving')
+
+  try {
+    await fastify.register(fastifyStatic, {
+      root: uiDistPath,
+      prefix: '/',
+    })
+    logger.info('Static file serving registered successfully')
+  } catch (error) {
+    logger.error({ error, uiDistPath }, 'Failed to register static file serving')
+    // Continue without static serving if it fails
+  }
 
   // List all available tools
   fastify.get('/tools', async () => {
@@ -731,6 +752,18 @@ export async function buildServer() {
       logger.error({ error }, 'Failed to get dashboard stats')
       throw error
     }
+  })
+
+  // SPA fallback - serve index.html for non-API routes
+  fastify.setNotFoundHandler(async (request, reply) => {
+    // Don't handle API routes
+    if (request.url.startsWith('/api/')) {
+      reply.code(404).send({ error: 'Not found' })
+      return
+    }
+    
+    // Serve index.html for all other routes (SPA routing)
+    return reply.sendFile('index.html')
   })
 
   return fastify

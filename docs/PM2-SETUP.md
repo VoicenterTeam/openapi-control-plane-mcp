@@ -6,6 +6,34 @@ This document explains how to use PM2 for managing the OpenAPI Control Plane MCP
 
 PM2 is a production-grade process manager for Node.js applications with built-in load balancer, monitoring, and zero-downtime deployments.
 
+The application runs as a single process that serves both:
+- **REST API endpoints** at `/api/*` (stats, specs, audit logs, etc.)
+- **Static UI files** from the Nuxt build (pre-generated static site)
+
+This single-process architecture simplifies deployment and reduces resource usage while providing a complete full-stack application.
+
+## Architecture
+
+### Single Process Deployment
+
+The backend Fastify server serves the entire application:
+
+```
+http://localhost:3001/          → Static UI (index.html, JS, CSS)
+http://localhost:3001/specs     → Static UI (SPA routing)
+http://localhost:3001/api/stats → REST API endpoint
+http://localhost:3001/api/specs → REST API endpoint
+```
+
+### Build Process
+
+When you run `npm run build:all`:
+1. **Backend Build**: TypeScript compiles to `dist/` directory
+2. **UI Build**: Nuxt generates static site to `ui/.output/public/`
+3. **Serving**: Backend serves static UI files using `@fastify/static`
+
+The UI is pre-built as a static site (SSG mode), so no server-side rendering happens at runtime. All data fetching happens client-side via the REST API.
+
 ## Installation
 
 PM2 is already included in the project dependencies. For global installation:
@@ -26,13 +54,22 @@ The application uses `ecosystem.config.cjs` for PM2 configuration with the follo
 
 ## Usage
 
+**Important**: Always run `npm run build:all` before starting PM2. This builds both the backend TypeScript code and the Nuxt static site.
+
 ### Development
 
 Start the application in development mode:
 
 ```bash
+# Build both backend and UI
 npm run build:all
+
+# Start with PM2 (port 3001)
 npm run pm2:start
+
+# Access the application
+# UI: http://localhost:3001
+# API: http://localhost:3001/api/*
 ```
 
 ### Production
@@ -40,8 +77,15 @@ npm run pm2:start
 Start the application in production mode:
 
 ```bash
+# Build both backend and UI
 npm run build:all
+
+# Start with PM2 in production mode (port 80)
 npm run pm2:start:prod
+
+# Access the application
+# UI: http://localhost (port 80)
+# API: http://localhost/api/*
 ```
 
 ### Common Commands
