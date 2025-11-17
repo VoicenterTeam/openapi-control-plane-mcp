@@ -1,0 +1,11 @@
+{
+  "api_id": "test-rest-api",
+  "name": "Test REST API",
+  "created_at": "2025-11-16T19:00:50.892Z",
+  "current_version": "v1.0.0",
+  "versions": [
+    "v1.0.0"
+  ],
+  "latest_stable": "v1.0.0",
+  "owner": "test@example.com"
+}

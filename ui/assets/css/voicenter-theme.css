@@ -1,0 +1,115 @@
+/**
+ * Voicenter Theme Configuration
+ * 
+ * @description Custom Voicenter red branding for OpenAPI Control Panel.
+ * Colors based on official Voicenter brand guidelines.
+ */
+
+:root {
+  /* Voicenter Primary Red Colors (Light Mode) */
+  --voicenter-primary: 0 85% 50%;        /* #F52222 - Main red */
+  --voicenter-primary-light: 0 85% 85%;  /* #FABDBD - Light red */
+  --voicenter-primary-dark: 0 85% 25%;   /* #750B0B - Dark red */
+  
+  /* Supporting Colors */
+  --voicenter-success: 148 48% 46%;      /* #3DAF7A - Green */
+  --voicenter-warning: 47 96% 53%;       /* #F9C74F - Amber */
+  --voicenter-destructive: 0 70% 45%;    /* #CC2929 - Darker red */
+  
+  /* Override @nuxt/ui primary color */
+  --color-primary-50: hsl(0, 85%, 95%);
+  --color-primary-100: hsl(0, 85%, 85%);
+  --color-primary-200: hsl(0, 85%, 75%);
+  --color-primary-300: hsl(0, 85%, 65%);
+  --color-primary-400: hsl(0, 85%, 55%);
+  --color-primary-500: hsl(0, 85%, 50%);  /* Main brand color */
+  --color-primary-600: hsl(0, 85%, 45%);
+  --color-primary-700: hsl(0, 85%, 35%);
+  --color-primary-800: hsl(0, 85%, 25%);
+  --color-primary-900: hsl(0, 85%, 15%);
+  --color-primary-950: hsl(0, 85%, 10%);
+}
+
+.dark {
+  /* Voicenter Primary Red Colors (Dark Mode) */
+  --voicenter-primary: 0 85% 60%;        /* #F55555 - Brighter for dark mode */
+  --voicenter-primary-light: 0 90% 85%;  /* #FAC9C9 - Light text */
+  --voicenter-primary-dark: 0 80% 45%;   /* #D92626 - Muted red */
+  
+  /* Supporting Colors (Dark Mode) */
+  --voicenter-success: 148 65% 55%;      /* #47C983 - Brighter green */
+  --voicenter-warning: 47 100% 60%;      /* #FDD764 - Brighter amber */
+  --voicenter-destructive: 0 75% 55%;    /* #E33C3C - Brighter destructive */
+  
+  /* Override @nuxt/ui primary color for dark mode */
+  --color-primary-50: hsl(0, 85%, 10%);
+  --color-primary-100: hsl(0, 85%, 15%);
+  --color-primary-200: hsl(0, 85%, 25%);
+  --color-primary-300: hsl(0, 85%, 35%);
+  --color-primary-400: hsl(0, 85%, 45%);
+  --color-primary-500: hsl(0, 85%, 60%);  /* Brighter main color */
+  --color-primary-600: hsl(0, 85%, 65%);
+  --color-primary-700: hsl(0, 85%, 75%);
+  --color-primary-800: hsl(0, 85%, 85%);
+  --color-primary-900: hsl(0, 85%, 95%);
+  --color-primary-950: hsl(0, 90%, 98%);
+}
+
+/* Custom utility classes */
+.text-voicenter-primary {
+  color: hsl(var(--voicenter-primary));
+}
+
+.bg-voicenter-primary {
+  background-color: hsl(var(--voicenter-primary));
+}
+
+.border-voicenter-primary {
+  border-color: hsl(var(--voicenter-primary));
+}
+
+.hover\:bg-voicenter-primary:hover {
+  background-color: hsl(var(--voicenter-primary));
+}
+
+.text-voicenter-success {
+  color: hsl(var(--voicenter-success));
+}
+
+.bg-voicenter-success {
+  background-color: hsl(var(--voicenter-success));
+}
+
+.text-voicenter-warning {
+  color: hsl(var(--voicenter-warning));
+}
+
+.bg-voicenter-warning {
+  background-color: hsl(var(--voicenter-warning));
+}
+
+.text-voicenter-destructive {
+  color: hsl(var(--voicenter-destructive));
+}
+
+.bg-voicenter-destructive {
+  background-color: hsl(var(--voicenter-destructive));
+}
+
+/* Custom gradient backgrounds */
+.bg-gradient-voicenter {
+  background: linear-gradient(135deg, 
+    hsl(var(--voicenter-primary)) 0%, 
+    hsl(var(--voicenter-primary-dark)) 100%
+  );
+}
+
+/* ECharts color palette */
+.echarts-voicenter-palette {
+  --echarts-color-1: hsl(var(--voicenter-primary));
+  --echarts-color-2: hsl(var(--voicenter-primary-dark));
+  --echarts-color-3: hsl(var(--voicenter-success));
+  --echarts-color-4: hsl(var(--voicenter-warning));
+  --echarts-color-5: hsl(var(--voicenter-destructive));
+}
+

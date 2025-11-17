@@ -457,6 +457,254 @@ export async function buildServer() {
     }
   })
 
+  // REST API Routes for UI
+  // GET /api/specs - List all API specs with metadata
+  fastify.get('/api/specs', async () => {
+    try {
+      const allItems = await storage.list('/')
+      
+      // Extract only top-level directory names (API IDs)
+      const apiDirs = [...new Set(
+        allItems
+          .filter((item) => {
+            // Exclude hidden files/dirs
+            if (item.startsWith('.')) return false
+            // Exclude known non-API directories
+            const topLevel = item.split(/[/\\]/)[0]
+            if (['specs', 'backups'].includes(topLevel)) return false
+            return true
+          })
+          .map((item) => {
+            // Extract the top-level directory name
+            return item.split(/[/\\]/)[0]
+          })
+      )]
+      
+      const specs = await Promise.all(
+        apiDirs.map(async (apiId) => {
+          try {
+            return await versionManager.getApiMetadata(apiId as any)
+          } catch (error) {
+            logger.warn({ apiId, error }, 'Failed to load API metadata')
+            return null
+          }
+        })
+      )
+      return specs.filter((spec) => spec !== null)
+    } catch (error) {
+      logger.error({ error }, 'Failed to list specs')
+      throw error
+    }
+  })
+
+  // GET /api/specs/:apiId - Get specific spec with current version
+  fastify.get<{ Params: { apiId: string } }>('/api/specs/:apiId', async (request) => {
+    const { apiId } = request.params
+    try {
+      const metadata = await versionManager.getApiMetadata(apiId as any)
+      return metadata
+    } catch (error) {
+      logger.error({ apiId, error }, 'Failed to get spec')
+      throw error
+    }
+  })
+
+  // GET /api/specs/:apiId/versions - List all versions for an API
+  fastify.get<{ Params: { apiId: string } }>('/api/specs/:apiId/versions', async (request) => {
+    const { apiId } = request.params
+    try {
+      const metadata = await versionManager.getApiMetadata(apiId as any)
+      const versions = await Promise.all(
+        metadata.versions.map(async (version) => {
+          try {
+            return await versionManager.getVersionMetadata(apiId as any, version)
+          } catch (error) {
+            logger.warn({ apiId, version, error }, 'Failed to load version metadata')
+            return null
+          }
+        })
+      )
+      return versions.filter((v) => v !== null)
+    } catch (error) {
+      logger.error({ apiId, error }, 'Failed to list versions')
+      throw error
+    }
+  })
+
+  // GET /api/specs/:apiId/versions/:version - Get specific version with spec
+  fastify.get<{ Params: { apiId: string; version: string } }>(
+    '/api/specs/:apiId/versions/:version',
+    async (request) => {
+      const { apiId, version } = request.params
+      try {
+        const metadata = await versionManager.getVersionMetadata(apiId as any, version as any)
+        const spec = await specManager.loadSpec(apiId as any, version as any)
+        return { metadata, spec: spec.spec }
+      } catch (error) {
+        logger.error({ apiId, version, error }, 'Failed to get version')
+        throw error
+      }
+    }
+  )
+
+  // PUT /api/specs/:apiId - Update spec (simple editor support)
+  fastify.put<{ Params: { apiId: string }; Body: any }>('/api/specs/:apiId', async (request) => {
+    const { apiId } = request.params
+    const body = request.body as { spec: any; version: string; description?: string }
+    const { spec, version } = body
+    try {
+      await specManager.saveSpec(apiId as any, version as any, spec)
+      logger.info({ apiId, version }, 'Spec updated via API')
+      return { success: true, message: 'Spec updated successfully' }
+    } catch (error) {
+      logger.error({ apiId, error }, 'Failed to update spec')
+      throw error
+    }
+  })
+
+  // GET /api/audit - Get audit log (with optional filters)
+  fastify.get<{ Querystring: { apiId?: string; limit?: number } }>('/api/audit', async (request) => {
+    const { apiId, limit } = request.query
+    try {
+      if (apiId) {
+        const log = await auditLogger.getAuditLog(apiId as any, limit)
+        return log
+      } else {
+        // Get audit logs for all APIs
+        const apis = await storage.list('/')
+        const allLogs = await Promise.all(
+          apis
+            .filter((dir) => !dir.startsWith('.') && !['specs', 'backups'].includes(dir))
+            .map(async (api) => {
+              try {
+                return await auditLogger.getAuditLog(api as any)
+              } catch (error) {
+                return []
+              }
+            })
+        )
+        const combined = allLogs.flat().sort((a, b) => {
+          return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        })
+        return limit ? combined.slice(0, limit) : combined
+      }
+    } catch (error) {
+      logger.error({ error }, 'Failed to get audit log')
+      throw error
+    }
+  })
+
+  // GET /api/audit/:apiId - Get audit log for specific API
+  fastify.get<{ Params: { apiId: string }; Querystring: { limit?: number } }>(
+    '/api/audit/:apiId',
+    async (request) => {
+      const { apiId } = request.params
+      const { limit } = request.query
+      try {
+        const log = await auditLogger.getAuditLog(apiId as any, limit)
+        return log
+      } catch (error) {
+        logger.error({ apiId, error }, 'Failed to get audit log')
+        throw error
+      }
+    }
+  )
+
+  // GET /api/stats - Dashboard statistics
+  fastify.get('/api/stats', async () => {
+    try {
+      const apis = await storage.list('/')
+      const validApis = apis.filter((dir) => !dir.startsWith('.') && !['specs', 'backups'].includes(dir))
+
+      let totalSpecs = 0
+      let totalVersions = 0
+      let totalEndpoints = 0
+      let totalSchemas = 0
+      const specsByTag: Record<string, number> = {}
+      let breakingChangesCount = 0
+
+      const allMetadata = await Promise.all(
+        validApis.map(async (apiId) => {
+          try {
+            return await versionManager.getApiMetadata(apiId as any)
+          } catch (error) {
+            return null
+          }
+        })
+      )
+
+      for (const metadata of allMetadata) {
+        if (!metadata) continue
+        totalSpecs++
+        totalVersions += metadata.versions.length
+
+        // Count tags
+        if (metadata.tags) {
+          metadata.tags.forEach((tag) => {
+            specsByTag[tag] = (specsByTag[tag] || 0) + 1
+          })
+        }
+
+        // Get stats from current version
+        try {
+          const versionMeta = await versionManager.getVersionMetadata(
+            metadata.api_id,
+            metadata.current_version
+          )
+          totalEndpoints += versionMeta.stats.endpoint_count
+          totalSchemas += versionMeta.stats.schema_count
+          if (versionMeta.changes.breaking_changes.length > 0) {
+            breakingChangesCount++
+          }
+        } catch (error) {
+          // Ignore errors for individual versions
+        }
+      }
+
+      // Get recent changes from audit log
+      const allLogs = await Promise.all(
+        validApis.map(async (api) => {
+          try {
+            return await auditLogger.getAuditLog(api as any, 10)
+          } catch (error) {
+            return []
+          }
+        })
+      )
+      const recentChanges = allLogs
+        .flat()
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .slice(0, 20)
+        .map((log) => ({
+          timestamp: log.timestamp,
+          api_id: log.api_id,
+          event: log.event,
+          version: log.version,
+        }))
+
+      // Calculate versions this week
+      const oneWeekAgo = new Date()
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+      const versionsThisWeek = recentChanges.filter(
+        (change) => change.event === 'version_created' && new Date(change.timestamp) >= oneWeekAgo
+      ).length
+
+      return {
+        total_specs: totalSpecs,
+        total_versions: totalVersions,
+        total_endpoints: totalEndpoints,
+        total_schemas: totalSchemas,
+        recent_changes: recentChanges,
+        specs_by_tag: specsByTag,
+        breaking_changes_count: breakingChangesCount,
+        versions_this_week: versionsThisWeek,
+      }
+    } catch (error) {
+      logger.error({ error }, 'Failed to get dashboard stats')
+      throw error
+    }
+  })
+
   return fastify
 }
 

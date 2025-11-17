@@ -1,0 +1,33 @@
+{
+  "name": "openapi-control-panel-ui",
+  "version": "1.0.0",
+  "description": "Nuxt.js UI for OpenAPI Control Panel",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:report": "playwright show-report"
+  },
+  "dependencies": {
+    "@nuxt/ui": "^2.14.0",
+    "@vueuse/core": "^10.7.2",
+    "echarts": "^5.5.0",
+    "nuxt": "^3.10.3",
+    "vue": "^3.4.21",
+    "vue-echarts": "^6.6.9",
+    "vue-router": "^4.3.0"
+  },
+  "devDependencies": {
+    "@nuxt/devtools": "^1.0.8",
+    "@nuxtjs/tailwindcss": "^6.11.4",
+    "@playwright/test": "^1.56.1",
+    "typescript": "^5.3.3"
+  }
+}
