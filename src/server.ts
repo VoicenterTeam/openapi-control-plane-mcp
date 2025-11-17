@@ -572,10 +572,24 @@ export async function buildServer() {
       } else {
         // Get audit logs for all APIs
         const apis = await storage.list('/')
+        // Extract top-level directory names and remove duplicates
+        // Normalize paths to use forward slashes (Windows returns backslashes)
+        const topLevelApiIds = [...new Set(apis.map(item => item.replace(/\\/g, '/').split('/')[0]))]
+        
+        const validApis = topLevelApiIds.filter((item) => {
+          // Exclude hidden files/dirs
+          if (item.startsWith('.')) return false
+          // Exclude known non-API directories
+          if (['specs', 'backups'].includes(item)) return false
+          // Exclude common files that shouldn't be treated as APIs
+          if (item.includes('.json') || item.includes('.yaml') || item.includes('.yml')) return false
+          // Exclude version directories (format: v1.0.0)
+          if (/^v\d+\.\d+\.\d+$/.test(item)) return false
+          return true
+        })
+        
         const allLogs = await Promise.all(
-          apis
-            .filter((dir) => !dir.startsWith('.') && !['specs', 'backups'].includes(dir))
-            .map(async (api) => {
+          validApis.map(async (api) => {
               try {
                 return await auditLogger.getAuditLog(api as any)
               } catch (error) {
