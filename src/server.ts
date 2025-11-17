@@ -614,7 +614,21 @@ export async function buildServer() {
   fastify.get('/api/stats', async () => {
     try {
       const apis = await storage.list('/')
-      const validApis = apis.filter((dir) => !dir.startsWith('.') && !['specs', 'backups'].includes(dir))
+      // Extract top-level directory names and remove duplicates
+      // Normalize paths to use forward slashes (Windows returns backslashes)
+      const topLevelApiIds = [...new Set(apis.map(item => item.replace(/\\/g, '/').split('/')[0]))]
+      
+      const validApis = topLevelApiIds.filter((item) => {
+        // Exclude hidden files/dirs
+        if (item.startsWith('.')) return false
+        // Exclude known non-API directories
+        if (['specs', 'backups'].includes(item)) return false
+        // Exclude common files that shouldn't be treated as APIs
+        if (item.includes('.json') || item.includes('.yaml') || item.includes('.yml')) return false
+        // Exclude version directories (format: v1.0.0)
+        if (/^v\d+\.\d+\.\d+$/.test(item)) return false
+        return true
+      })
 
       let totalSpecs = 0
       let totalVersions = 0
