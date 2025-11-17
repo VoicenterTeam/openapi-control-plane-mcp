@@ -4,7 +4,8 @@ export default defineNuxtConfig({
   
   modules: ['@nuxt/ui'],
   
-  ssr: false, // Changed to false for static generation
+  // Use SSR in development, SSG for production builds
+  ssr: process.env.NODE_ENV === 'production' ? false : true,
   
   app: {
     head: {
@@ -28,7 +29,8 @@ export default defineNuxtConfig({
   },
 
   nitro: {
-    preset: 'static', // Added for static generation
+    // Use static preset only for production builds
+    preset: process.env.NODE_ENV === 'production' ? 'static' : undefined,
     devProxy: {
       '/api': {
         target: 'http://localhost:3001/api',
