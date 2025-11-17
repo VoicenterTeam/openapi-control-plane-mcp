@@ -1,0 +1,35 @@
+# =====================================
+# Docker Compose - OpenAPI Control Plane MCP
+# =====================================
+
+version: '3.8'
+
+services:
+  openapi-mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: openapi-mcp-server
+    ports:
+      - "3001:80"  # Map host port 3001 to container port 80
+    volumes:
+      - ./data:/data  # Persist data directory
+    environment:
+      - NODE_ENV=production
+      - PORT=80
+      - HOST=0.0.0.0
+      - DATA_DIR=/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:80/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+    networks:
+      - openapi-mcp-network
+
+networks:
+  openapi-mcp-network:
+    driver: bridge
+

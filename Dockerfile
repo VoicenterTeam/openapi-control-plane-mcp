@@ -15,27 +15,41 @@ RUN node --version && npm --version
 # Install PM2 globally
 RUN npm install -g pm2
 
-# Copy package files
+# Copy root package files
 COPY package*.json ./
 
-# Install production dependencies only
+# Copy UI package files
+COPY ui/package*.json ./ui/
+
+# Install root production dependencies
 RUN npm ci --only=production --ignore-scripts
+
+# Install UI production dependencies
+RUN cd ui && npm ci --only=production --ignore-scripts
 
 # Copy TypeScript configuration and source code
 COPY tsconfig.json ./
 COPY src ./src
 
-# Install dev dependencies temporarily for build
-RUN npm install --only=development --ignore-scripts
+# Copy UI source code and configuration
+COPY ui ./ui
 
-# Build TypeScript code
-RUN npm run build
+# Copy PM2 ecosystem file
+COPY ecosystem.config.cjs ./
+
+# Install dev dependencies temporarily for build (both root and UI)
+RUN npm install --only=development --ignore-scripts
+RUN cd ui && npm install --only=development --ignore-scripts
+
+# Build both backend and UI
+RUN npm run build:all
 
 # Remove dev dependencies after build
 RUN npm prune --production
+RUN cd ui && npm prune --production
 
-# Create data directory for volume
-RUN mkdir -p /data
+# Create data and logs directories
+RUN mkdir -p /data /app/logs
 
 # Set environment variables
 ENV NODE_ENV=production
@@ -53,6 +67,6 @@ EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD node -e "require('http').get('http://localhost:80/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"
 
-# Start application with PM2
-CMD ["pm2-runtime", "start", "dist/server.js", "--name", "openapi-control-plane-mcp", "--no-daemon"]
+# Start application with PM2 using ecosystem file
+CMD ["pm2-runtime", "start", "ecosystem.config.cjs", "--env", "production"]
 

@@ -1,97 +1,61 @@
-# =====================================
-# .dockerignore - Build Context Optimization
-# Prevents unnecessary files from being sent to Docker daemon
-# =====================================
-
-# Dependencies (will be installed in container)
+# Node modules (will be installed in container)
 node_modules/
-# Note: package-lock.json is needed for npm ci in Docker build
-yarn.lock
-yarn-debug.log*
-yarn-error.log*
-pnpm-lock.yaml
+ui/node_modules/
 
 # Build outputs (will be built in container)
 dist/
-build/
-*.tsbuildinfo
+ui/.nuxt/
+ui/.output/
+
+# Git
+.git/
+.gitignore
+
+# Tests
+tests/
+ui/tests/
+coverage/
+ui/coverage/
+*.test.ts
+*.spec.ts
+
+# Development files
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# CI/CD
+.github/
 
 # Logs
 logs/
 *.log
 npm-debug.log*
-combined.log
-error.log
-access.log
+yarn-debug.log*
+yarn-error.log*
 
-# Testing
-coverage/
-.nyc_output/
-test-results/
-__snapshots__/
-tests/
-**/*.test.ts
-**/*.spec.ts
-
-# IDE & Editor
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.project
-.classpath
-.settings/
-
-# OS Files
+# OS
 .DS_Store
 Thumbs.db
-desktop.ini
-
-# Git
-.git/
-.gitignore
-.gitattributes
-
-# CI/CD
-.gitlab-ci.yml
-.github/
-
-# Documentation
-README.md
-docs/
-*.md
-!package.json
-
-# Environment files (should not be in image)
-.env
-.env.*
-!.env.example
 
 # Temporary files
 tmp/
 temp/
 *.tmp
-*.temp
-.cache/
 
-# Docker files
-Dockerfile*
-docker-compose*.yml
-.dockerignore
-
-# Backup files
-*.bak
-*.backup
-*.old
-backup/
-backups/
-
-# Development configuration
-.prettierrc
-.prettierignore
-.eslintrc*
-.eslintignore
-jest.config.*
-# Note: tsconfig.json is needed for the Docker build, so it's NOT excluded
-
+# Playwright
+playwright-report/
+test-results/
+ui/playwright-report/
+ui/test-results/
