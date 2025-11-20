@@ -4,6 +4,7 @@
  * @description Core service for loading, saving, and managing OpenAPI specifications.
  * The librarian of your API specs - knows where everything is, keeps things organized,
  * and quietly judges your endpoint naming choices. 📚
+ * Now with folder awareness for multi-workspace organization!
  *
  * @module services/spec-manager
  */
@@ -25,21 +26,29 @@ import { logger } from '../utils/logger.js'
  * @description Manages OpenAPI specification storage and operations
  */
 export class SpecManager {
-  constructor(private storage: BaseStorageProvider) {}
+  private defaultFolder: string = 'active'
+
+  constructor(private storage: BaseStorageProvider, defaultFolder: string = 'active') {
+    this.defaultFolder = defaultFolder
+  }
 
   /**
    * Loads a specific version of an API spec
    * @param apiId - API identifier
    * @param version - Version tag (e.g., 'v1.0.0')
+   * @param folder - Specific folder (optional, will search all if not provided)
    * @returns Promise resolving to the parsed OpenAPI document
    * @throws StorageError if spec doesn't exist or can't be read
    * @throws ToolError if spec is invalid
    * @description Reads the versioned spec file and parses it.
    * Like opening a specific edition of a book from your library.
    */
-  async loadSpec(apiId: ApiId, version: VersionTag): Promise<OpenAPIDocument> {
-    const yamlPath = `${apiId}/${version}/spec.yaml`
-    const jsonPath = `${apiId}/${version}/spec.json`
+  async loadSpec(apiId: ApiId, version: VersionTag, folder?: string): Promise<OpenAPIDocument> {
+    // If folder not specified, find where the API lives
+    const targetFolder = folder || await this.findApiFolder(apiId) || this.defaultFolder
+    
+    const yamlPath = `${targetFolder}/${apiId}/${version}/spec.yaml`
+    const jsonPath = `${targetFolder}/${apiId}/${version}/spec.json`
 
     try {
       // Try YAML first (preferred format)
@@ -48,7 +57,7 @@ export class SpecManager {
         const spec = yaml.load(content) as object
         const parsedSpec = await SwaggerParser.parse(spec as any)
         const detectedVersion = detectOpenAPIVersion(parsedSpec)
-        logger.debug({ apiId, version, detectedVersion }, 'Loaded spec from YAML')
+        logger.debug({ apiId, version, folder: targetFolder, detectedVersion }, 'Loaded spec from YAML')
         return { version: detectedVersion, spec: parsedSpec } as OpenAPIDocument
       }
 
@@ -58,12 +67,12 @@ export class SpecManager {
         const spec = JSON.parse(content)
         const parsedSpec = await SwaggerParser.parse(spec as any)
         const detectedVersion = detectOpenAPIVersion(parsedSpec)
-        logger.debug({ apiId, version, detectedVersion }, 'Loaded spec from JSON')
+        logger.debug({ apiId, version, folder: targetFolder, detectedVersion }, 'Loaded spec from JSON')
         return { version: detectedVersion, spec: parsedSpec } as OpenAPIDocument
       }
 
       throw createStorageError(
-        `Spec not found for API ${apiId} version ${version}`,
+        `Spec not found for API ${apiId} version ${version} in folder ${targetFolder}`,
         yamlPath,
         'read'
       )
@@ -71,7 +80,7 @@ export class SpecManager {
       if (error instanceof StorageError) {
         throw error
       }
-      logger.error({ apiId, version, error }, 'Failed to load spec')
+      logger.error({ apiId, version, folder: targetFolder, error }, 'Failed to load spec')
       throw createStorageError(
         `Failed to load spec for API ${apiId} version ${version}`,
         yamlPath,
@@ -87,27 +96,31 @@ export class SpecManager {
    * @param version - Version tag
    * @param spec - OpenAPI specification to save
    * @param format - Output format (yaml or json)
+   * @param folder - Specific folder (optional, will search all if not provided)
    * @description Saves spec using atomic writes to prevent corruption.
    */
   async saveSpec(
     apiId: ApiId,
     version: VersionTag,
     spec: object,
-    format: 'yaml' | 'json' = 'yaml'
+    format: 'yaml' | 'json' = 'yaml',
+    folder?: string
   ): Promise<void> {
-    const specPath = `${apiId}/${version}/spec.${format}`
+    // If folder not specified, find where the API lives
+    const targetFolder = folder || await this.findApiFolder(apiId) || this.defaultFolder
+    const specPath = `${targetFolder}/${apiId}/${version}/spec.${format}`
 
     try {
       // Ensure directory exists
-      await this.storage.ensureDirectory(`${apiId}/${version}`)
+      await this.storage.ensureDirectory(`${targetFolder}/${apiId}/${version}`)
 
       // Save spec
       const content = format === 'yaml' ? yaml.dump(spec) : JSON.stringify(spec, null, 2)
       await this.storage.write(specPath, content)
 
-      logger.info({ apiId, version, format }, 'Spec saved successfully')
+      logger.info({ apiId, version, format, folder: targetFolder }, 'Spec saved successfully')
     } catch (error) {
-      logger.error({ apiId, version, error }, 'Failed to save spec')
+      logger.error({ apiId, version, folder: targetFolder, error }, 'Failed to save spec')
       throw createStorageError(
         `Failed to save spec for API ${apiId} version ${version}`,
         specPath,
@@ -236,6 +249,37 @@ export class SpecManager {
     const yamlPath = `${apiId}/current.yaml`
     const jsonPath = `${apiId}/current.json`
     return (await this.storage.exists(yamlPath)) || (await this.storage.exists(jsonPath))
+  }
+
+  /**
+   * Finds which folder contains a specific API
+   * @param apiId - API identifier
+   * @returns Promise resolving to folder name or null if not found
+   * @description Searches all folders to locate an API. Detective work for file systems.
+   */
+  private async findApiFolder(apiId: ApiId): Promise<string | null> {
+    try {
+      // List all top-level directories (potential folders)
+      const allItems = await this.storage.list('/')
+      const folderNames = [...new Set(
+        allItems
+          .filter((item) => !item.startsWith('.') && !item.startsWith('_'))
+          .map((item) => item.split(/[/\\]/)[0])
+      )]
+
+      // Check each folder for the API
+      for (const folder of folderNames) {
+        const metadataPath = `${folder}/${apiId}/metadata.json`
+        if (await this.storage.exists(metadataPath)) {
+          return folder
+        }
+      }
+
+      return null
+    } catch (error) {
+      logger.error({ error, apiId }, 'Failed to find API folder')
+      return null
+    }
   }
 
   // TODO: Implement createApi method with proper version handling

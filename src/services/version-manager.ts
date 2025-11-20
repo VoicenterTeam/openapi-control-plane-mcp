@@ -3,6 +3,7 @@
  *
  * @description Manages OpenAPI specification versions with style and grace.
  * Like a librarian but for API versions. Organized chaos at its finest. 📚🔖
+ * Now with folder awareness for multi-workspace organization!
  *
  * @module services/version-manager
  */
@@ -17,17 +18,21 @@ import { createStorageError, createValidationError } from '../utils/errors.js'
  * Version Manager Service
  * @description Manages versions of OpenAPI specifications. The version control system.
  * Keeps track of what came before, what is now, and what's coming next. 🕰️
+ * Now supports folder-based organization for those who love order.
  */
 export class VersionManager {
   private storage: BaseStorageProvider
+  private defaultFolder: string = 'active'
 
   /**
    * Creates a new version manager
    * @param storage - Storage provider for metadata
+   * @param defaultFolder - Default folder for new specs (defaults to 'active')
    * @description Sets up the version management system
    */
-  constructor(storage: BaseStorageProvider) {
+  constructor(storage: BaseStorageProvider, defaultFolder: string = 'active') {
     this.storage = storage
+    this.defaultFolder = defaultFolder
   }
 
   /**
@@ -36,6 +41,7 @@ export class VersionManager {
    * @param name - Human-readable API name
    * @param owner - Owner/team responsible
    * @param initialVersion - First version tag
+   * @param folder - Folder to place the API in (defaults to 'active')
    * @returns Promise resolving to created metadata
    * @description Initializes a new API in the system. Birth certificate for APIs.
    */
@@ -43,10 +49,12 @@ export class VersionManager {
     apiId: ApiId,
     name: string,
     owner: string,
-    initialVersion: VersionTag
+    initialVersion: VersionTag,
+    folder?: string
   ): Promise<ApiMetadata> {
     try {
-      const metadataPath = this.getMetadataPath(apiId)
+      const targetFolder = folder || this.defaultFolder
+      const metadataPath = this.getMetadataPath(apiId, targetFolder)
 
       // Check if metadata already exists
       if (await this.storage.exists(metadataPath)) {
@@ -61,11 +69,12 @@ export class VersionManager {
         versions: [initialVersion],
         latest_stable: initialVersion,
         owner,
+        folder: targetFolder,
       }
 
       await this.storage.write(metadataPath, JSON.stringify(metadata, null, 2))
 
-      logger.info({ apiId, name, owner, initialVersion }, 'API metadata created')
+      logger.info({ apiId, name, owner, initialVersion, folder: targetFolder }, 'API metadata created')
 
       return metadata
     } catch (error) {
@@ -77,19 +86,37 @@ export class VersionManager {
   /**
    * Retrieves API metadata
    * @param apiId - API identifier
+   * @param folder - Specific folder to search in (optional, searches all folders if not provided)
    * @returns Promise resolving to API metadata
-   * @description Gets the API's vital statistics
+   * @description Gets the API's vital statistics. Can search specific folder or all folders.
    */
-  async getApiMetadata(apiId: ApiId): Promise<ApiMetadata> {
+  async getApiMetadata(apiId: ApiId, folder?: string): Promise<ApiMetadata> {
     try {
-      const metadataPath = this.getMetadataPath(apiId)
+      let metadataPath: string
+      
+      if (folder) {
+        // Search in specific folder
+        metadataPath = this.getMetadataPath(apiId, folder)
+      } else {
+        // Search all folders to find the API
+        const foundFolder = await this.findApiFolder(apiId)
+        if (!foundFolder) {
+          throw createStorageError(
+            `API '${apiId}' not found in any folder`,
+            `*/${apiId}/metadata.json`,
+            'read'
+          )
+        }
+        metadataPath = this.getMetadataPath(apiId, foundFolder)
+      }
+      
       const data = await this.storage.read(metadataPath)
       return JSON.parse(data) as ApiMetadata
     } catch (error) {
-      logger.error({ error, apiId }, 'Failed to retrieve API metadata')
+      logger.error({ error, apiId, folder }, 'Failed to retrieve API metadata')
       throw createStorageError(
         `Failed to retrieve API metadata: ${(error as Error).message}`,
-        this.getMetadataPath(apiId),
+        folder ? this.getMetadataPath(apiId, folder) : `*/${apiId}/metadata.json`,
         'read'
       )
     }
@@ -99,21 +126,24 @@ export class VersionManager {
    * Updates API metadata
    * @param apiId - API identifier
    * @param updates - Partial metadata updates
+   * @param folder - Specific folder (optional, will search all if not provided)
    * @returns Promise resolving to updated metadata
    * @description Updates API information. For when things change.
    */
   async updateApiMetadata(
     apiId: ApiId,
-    updates: Partial<Omit<ApiMetadata, 'api_id' | 'created_at'>>
+    updates: Partial<Omit<ApiMetadata, 'api_id' | 'created_at'>>,
+    folder?: string
   ): Promise<ApiMetadata> {
     try {
-      const metadata = await this.getApiMetadata(apiId)
+      const metadata = await this.getApiMetadata(apiId, folder)
       const updated = { ...metadata, ...updates }
 
-      const metadataPath = this.getMetadataPath(apiId)
+      const actualFolder = metadata.folder || this.defaultFolder
+      const metadataPath = this.getMetadataPath(apiId, actualFolder)
       await this.storage.write(metadataPath, JSON.stringify(updated, null, 2))
 
-      logger.info({ apiId, updates }, 'API metadata updated')
+      logger.info({ apiId, updates, folder: actualFolder }, 'API metadata updated')
 
       return updated
     } catch (error) {
@@ -244,24 +274,28 @@ export class VersionManager {
    * @param apiId - API identifier
    * @param version - Version tag
    * @param metadata - Version metadata
+   * @param folder - Specific folder (optional, will search all if not provided)
    * @returns Promise resolving when metadata is saved
    * @description Records detailed info about a specific version. The version's dossier.
    */
   async createVersionMetadata(
     apiId: ApiId,
     version: VersionTag,
-    metadata: VersionMetadata
+    metadata: VersionMetadata,
+    folder?: string
   ): Promise<void> {
     try {
-      const versionPath = this.getVersionMetadataPath(apiId, version)
+      // If folder not specified, find where the API lives
+      const targetFolder = folder || await this.findApiFolder(apiId) || this.defaultFolder
+      const versionPath = this.getVersionMetadataPath(apiId, version, targetFolder)
       await this.storage.write(versionPath, JSON.stringify(metadata, null, 2))
 
-      logger.info({ apiId, version }, 'Version metadata created')
+      logger.info({ apiId, version, folder: targetFolder }, 'Version metadata created')
     } catch (error) {
       logger.error({ error, apiId, version }, 'Failed to create version metadata')
       throw createStorageError(
         `Failed to create version metadata: ${(error as Error).message}`,
-        this.getVersionMetadataPath(apiId, version),
+        this.getVersionMetadataPath(apiId, version, folder),
         'write'
       )
     }
@@ -271,43 +305,118 @@ export class VersionManager {
    * Retrieves version-specific metadata
    * @param apiId - API identifier
    * @param version - Version tag
+   * @param folder - Specific folder (optional, will search all if not provided)
    * @returns Promise resolving to version metadata
    * @description Gets the details about a specific version
    */
-  async getVersionMetadata(apiId: ApiId, version: VersionTag): Promise<VersionMetadata> {
+  async getVersionMetadata(apiId: ApiId, version: VersionTag, folder?: string): Promise<VersionMetadata> {
     try {
-      const versionPath = this.getVersionMetadataPath(apiId, version)
+      // If folder not specified, find where the API lives
+      const targetFolder = folder || await this.findApiFolder(apiId) || this.defaultFolder
+      const versionPath = this.getVersionMetadataPath(apiId, version, targetFolder)
       const data = await this.storage.read(versionPath)
       return JSON.parse(data) as VersionMetadata
     } catch (error) {
       logger.error({ error, apiId, version }, 'Failed to retrieve version metadata')
       throw createStorageError(
         `Failed to retrieve version metadata: ${(error as Error).message}`,
-        this.getVersionMetadataPath(apiId, version),
+        this.getVersionMetadataPath(apiId, version, folder),
         'read'
       )
     }
   }
 
   /**
+   * Moves an API to a different folder
+   * @param apiId - API identifier
+   * @param targetFolder - Destination folder
+   * @returns Promise resolving to updated metadata
+   * @description Relocates an API to a new workspace. Like moving offices but less exhausting.
+   */
+  async moveApiToFolder(apiId: ApiId, targetFolder: string): Promise<ApiMetadata> {
+    try {
+      // Get current metadata
+      const metadata = await this.getApiMetadata(apiId)
+      const currentFolder = metadata.folder || this.defaultFolder
+
+      if (currentFolder === targetFolder) {
+        logger.info({ apiId, folder: targetFolder }, 'API already in target folder')
+        return metadata
+      }
+
+      // Update metadata with new folder
+      metadata.folder = targetFolder
+
+      // Write to new location
+      const newMetadataPath = this.getMetadataPath(apiId, targetFolder)
+      await this.storage.write(newMetadataPath, JSON.stringify(metadata, null, 2))
+
+      // Note: The actual file moving is handled by FolderManager.moveSpec()
+      // This method just updates the metadata reference
+
+      logger.info({ apiId, from: currentFolder, to: targetFolder }, 'API folder reference updated')
+
+      return metadata
+    } catch (error) {
+      logger.error({ error, apiId, targetFolder }, 'Failed to move API to folder')
+      throw error
+    }
+  }
+
+  /**
+   * Finds which folder contains a specific API
+   * @param apiId - API identifier
+   * @returns Promise resolving to folder name or null if not found
+   * @description Searches all folders to locate an API. The "where did I put that?" function.
+   */
+  async findApiFolder(apiId: ApiId): Promise<string | null> {
+    try {
+      // List all top-level directories (potential folders)
+      const allItems = await this.storage.list('/')
+      const folderNames = [...new Set(
+        allItems
+          .filter((item) => !item.startsWith('.') && !item.startsWith('_'))
+          .map((item) => item.split(/[/\\]/)[0])
+      )]
+
+      // Check each folder for the API
+      for (const folder of folderNames) {
+        const metadataPath = this.getMetadataPath(apiId, folder)
+        if (await this.storage.exists(metadataPath)) {
+          return folder
+        }
+      }
+
+      return null
+    } catch (error) {
+      logger.error({ error, apiId }, 'Failed to find API folder')
+      return null
+    }
+  }
+
+  /**
    * Gets metadata path for an API
    * @param apiId - API identifier
+   * @param folder - Folder name (optional, defaults to finding the folder)
    * @returns Metadata file path
-   * @description Where we keep the API's main file
+   * @description Where we keep the API's main file, now with folder support!
    */
-  private getMetadataPath(apiId: ApiId): string {
-    return `${apiId}/metadata.json`
+  private getMetadataPath(apiId: ApiId, folder?: string): string {
+    const targetFolder = folder || this.defaultFolder
+    return `${targetFolder}/${apiId}/metadata.json`
   }
 
   /**
    * Gets metadata path for a specific version
    * @param apiId - API identifier
    * @param version - Version tag
+   * @param folder - Folder name (optional, defaults to finding the folder)
    * @returns Version metadata file path
-   * @description Where we keep the version's file
+   * @description Where we keep the version's file, now with folder support!
    */
-  private getVersionMetadataPath(apiId: ApiId, version: VersionTag): string {
-    return `${apiId}/${version}/metadata.json`
+  private getVersionMetadataPath(apiId: ApiId, version: VersionTag, folder?: string): string {
+    const targetFolder = folder || this.defaultFolder
+    return `${targetFolder}/${apiId}/${version}/metadata.json`
   }
 
   /**

@@ -69,6 +69,20 @@ export interface VersionMetadata {
 }
 
 /**
+ * Folder metadata for organizing API specs
+ */
+export interface FolderMetadata {
+  name: string
+  title: string
+  description?: string
+  color?: string
+  icon?: string
+  created_at: string
+  created_by?: string
+  spec_count?: number
+}
+
+/**
  * API metadata
  */
 export interface ApiMetadata {
@@ -81,6 +95,7 @@ export interface ApiMetadata {
   owner: string
   tags?: string[]
   description?: string
+  folder?: string
 }
 
 /**

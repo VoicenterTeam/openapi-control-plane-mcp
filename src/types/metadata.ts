@@ -93,6 +93,30 @@ export interface VersionMetadata {
 }
 
 /**
+ * Metadata for a folder (workspace) containing API specs
+ * @description Think of it as a filing cabinet drawer label. Keeps your APIs organized
+ * by team, project, or whatever chaos-reducing categorization scheme you dream up.
+ */
+export interface FolderMetadata {
+  /** Folder name (kebab-case, filesystem-safe) */
+  name: string
+  /** Human-readable title for display */
+  title: string
+  /** Optional description explaining what belongs in this folder */
+  description?: string
+  /** Hex color for UI badging (e.g., #FF5733) */
+  color?: string
+  /** Optional icon identifier (for fancy UI folks) */
+  icon?: string
+  /** When this folder was created */
+  created_at: string // ISO 8601 format
+  /** Who created this folder */
+  created_by?: string
+  /** Number of specs in this folder (computed, not stored) */
+  spec_count?: number
+}
+
+/**
  * Metadata for an API (collection of versions)
  * @description The family tree of your API
  */
@@ -115,6 +139,8 @@ export interface ApiMetadata {
   tags?: string[]
   /** Optional description */
   description?: string
+  /** Folder this API belongs to (for workspace organization) */
+  folder?: string
 }
 
 /**

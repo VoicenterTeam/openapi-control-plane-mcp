@@ -32,6 +32,8 @@ import { logger } from './utils/logger.js'
 import fastifyStatic from '@fastify/static'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { FolderManager } from './services/folder-manager.js'
+import { migrateToFolders } from './utils/migrate-to-folders.js'
 
 /**
  * Builds and configures the Fastify server
@@ -57,6 +59,30 @@ export async function buildServer() {
   const diffCalculator = new DiffCalculator()
   const validationService = new ValidationService(specManager)
   const auditLogger = new AuditLogger(storage)
+  const folderManager = new FolderManager(storage)
+
+  // Run migration on startup (idempotent - safe to run multiple times)
+  logger.info('Checking folder structure and running migration if needed')
+  try {
+    const migrationResults = await migrateToFolders(storage)
+    if (migrationResults.skipped) {
+      logger.info('Folder structure already exists, migration skipped')
+    } else {
+      logger.info(
+        {
+          specs_migrated: migrationResults.specs_migrated,
+          folders_created: migrationResults.folders_created,
+          errors: migrationResults.errors.length,
+        },
+        'Migration completed'
+      )
+      if (migrationResults.errors.length > 0) {
+        logger.warn({ errors: migrationResults.errors }, 'Some specs failed to migrate')
+      }
+    }
+  } catch (error) {
+    logger.error({ error }, 'Migration failed - server will continue but folders may not work correctly')
+  }
 
   // Register tools
   const specReadTool = new SpecReadTool(specManager)
@@ -479,7 +505,143 @@ export async function buildServer() {
   })
 
   // REST API Routes for UI
-  // GET /api/specs - List all API specs with metadata
+  
+  // ============================================================================
+  // Folder Management Endpoints
+  // ============================================================================
+  
+  // GET /api/folders - List all folders with metadata
+  fastify.get('/api/folders', async () => {
+    try {
+      const folders = await folderManager.listFolders(true)
+      return folders
+    } catch (error) {
+      logger.error({ error }, 'Failed to list folders')
+      throw error
+    }
+  })
+
+  // POST /api/folders - Create new folder
+  fastify.post<{
+    Body: {
+      name: string
+      title: string
+      description?: string
+      color?: string
+      icon?: string
+    }
+  }>('/api/folders', async (request, reply) => {
+    try {
+      const { name, ...metadata } = request.body
+      const folder = await folderManager.createFolder(name, metadata)
+      reply.code(201).send(folder)
+    } catch (error) {
+      logger.error({ error, body: request.body }, 'Failed to create folder')
+      reply.code(400).send({ error: (error as Error).message })
+    }
+  })
+
+  // GET /api/folders/:folderName - Get specific folder metadata
+  fastify.get<{ Params: { folderName: string } }>('/api/folders/:folderName', async (request, reply) => {
+    try {
+      const { folderName } = request.params
+      const folder = await folderManager.getFolderMetadata(folderName)
+      return folder
+    } catch (error) {
+      logger.error({ error, folderName: request.params.folderName }, 'Failed to get folder')
+      return reply.code(404).send({ error: 'Folder not found' })
+    }
+  })
+
+  // PUT /api/folders/:folderName - Update folder metadata
+  fastify.put<{
+    Params: { folderName: string }
+    Body: {
+      title?: string
+      description?: string
+      color?: string
+      icon?: string
+    }
+  }>('/api/folders/:folderName', async (request, reply) => {
+    try {
+      const { folderName } = request.params
+      const folder = await folderManager.updateFolderMetadata(folderName, request.body)
+      return folder
+    } catch (error) {
+      logger.error({ error, folderName: request.params.folderName }, 'Failed to update folder')
+      return reply.code(400).send({ error: (error as Error).message })
+    }
+  })
+
+  // DELETE /api/folders/:folderName - Delete empty folder
+  fastify.delete<{ Params: { folderName: string } }>('/api/folders/:folderName', async (request, reply) => {
+    try {
+      const { folderName } = request.params
+      await folderManager.deleteFolder(folderName)
+      return reply.code(204).send()
+    } catch (error) {
+      logger.error({ error, folderName: request.params.folderName }, 'Failed to delete folder')
+      return reply.code(400).send({ error: (error as Error).message })
+    }
+  })
+
+  // GET /api/folders/:folderName/specs - List specs in folder
+  fastify.get<{ Params: { folderName: string } }>('/api/folders/:folderName/specs', async (request, reply) => {
+    try {
+      const { folderName } = request.params
+      const apiIds = await folderManager.listSpecsInFolder(folderName)
+      
+      const specs = await Promise.all(
+        apiIds.map(async (apiId) => {
+          try {
+            return await versionManager.getApiMetadata(apiId, folderName)
+          } catch (error) {
+            logger.warn({ apiId, folderName, error }, 'Failed to load API metadata')
+            return null
+          }
+        })
+      )
+      
+      return specs.filter((spec) => spec !== null)
+    } catch (error) {
+      logger.error({ error, folderName: request.params.folderName }, 'Failed to list specs in folder')
+      return reply.code(400).send({ error: (error as Error).message })
+    }
+  })
+
+  // POST /api/specs/:apiId/move - Move spec to different folder
+  fastify.post<{
+    Params: { apiId: string }
+    Body: { targetFolder: string }
+  }>('/api/specs/:apiId/move', async (request, reply) => {
+    try {
+      const { apiId } = request.params
+      const { targetFolder } = request.body
+
+      // Find current folder
+      const currentFolder = await folderManager.findSpecFolder(apiId as any)
+      if (!currentFolder) {
+        return reply.code(404).send({ error: `API '${apiId}' not found` })
+      }
+
+      // Move the spec
+      await folderManager.moveSpec(apiId as any, currentFolder, targetFolder)
+
+      // Update metadata
+      await versionManager.moveApiToFolder(apiId as any, targetFolder)
+
+      return reply.send({ success: true, from: currentFolder, to: targetFolder })
+    } catch (error) {
+      logger.error({ error, apiId: request.params.apiId }, 'Failed to move spec')
+      return reply.code(400).send({ error: (error as Error).message })
+    }
+  })
+
+  // ============================================================================
+  // Spec Management Endpoints (existing, but updated for folder context)
+  // ============================================================================
+  
+  // GET /api/specs - List all API specs with metadata (DEPRECATED - use /api/folders/:folderName/specs)
   fastify.get('/api/specs', async () => {
     try {
       const allItems = await storage.list('/')

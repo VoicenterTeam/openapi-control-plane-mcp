@@ -10,6 +10,7 @@ MCP server for OpenAPI/Swagger specification management with version control, LL
 
 ### Backend (MCP Server)
 - **10 MCP Tools** for complete OpenAPI management
+- **Multi-Workspace Organization** with folder-based spec management
 - **Version Control** with diff tracking and breaking change detection
 - **Audit Trail** with LLM reasoning capture
 - **Validation** with Spectral and SwaggerParser
@@ -18,10 +19,12 @@ MCP server for OpenAPI/Swagger specification management with version control, LL
 
 ### Frontend (Nuxt.js UI)
 - **📊 Dashboard** with Apache ECharts visualizations
+- **📁 Multi-Workspace Management** with folder organization
 - **📝 Specs List** with search and filters
 - **🔍 OpenAPI Viewer** with endpoint rendering
 - **📜 Version History** with change tracking
 - **📋 Audit Log** with advanced filtering
+- **💾 LocalStorage Persistence** for workspace preferences
 - **🎨 Voicenter Red Branding** throughout
 
 ## 🚀 Quick Start
@@ -77,21 +80,50 @@ openapi-control-plane-mcp/
 ├── src/                      # Backend source
 │   ├── config/              # Configuration
 │   ├── services/            # Core services
+│   │   ├── folder-manager.ts    # Workspace/folder management
+│   │   ├── spec-manager.ts      # Spec CRUD operations
+│   │   └── version-manager.ts   # Version control
 │   ├── storage/             # Storage layer
 │   ├── tools/               # MCP tools (10 tools)
 │   ├── types/               # TypeScript types
+│   │   └── metadata.ts          # Including FolderMetadata
 │   └── utils/               # Utilities
+│       └── migrate-to-folders.ts # Migration utility
 ├── ui/                       # Frontend Nuxt.js app
 │   ├── assets/              # CSS and theme
 │   ├── components/          # Vue components
+│   │   ├── FolderSidebar.vue    # Workspace navigation
+│   │   ├── FolderCreateModal.vue # Create workspace dialog
+│   │   └── SpecMoveDialog.vue   # Move spec dialog
 │   ├── composables/         # Data fetching
+│   │   ├── useFolders.ts        # Workspace management
+│   │   └── useSpecs.ts          # Spec management
 │   ├── layouts/             # Page layouts
 │   ├── pages/               # 5 main pages
 │   ├── public/              # Static assets
 │   └── types/               # Frontend types
+│       └── api.ts               # Including FolderMetadata
 ├── tests/                    # Backend tests (434 passing!)
 └── docs/                     # Documentation
 ```
+
+## 📁 Multi-Workspace Organization
+
+Organize your API specifications into workspaces/folders for better project management:
+
+- **Default Workspaces**: "Active Projects" and "Recycle Bin"
+- **Custom Workspaces**: Create unlimited custom workspaces with titles, descriptions, colors, and icons
+- **Spec Migration**: Move specs between workspaces with full version history preservation
+- **UI Integration**: Sidebar navigation with visual workspace indicators
+- **LocalStorage Persistence**: Remembers your last viewed workspace across sessions
+
+### Workspace Features
+
+- Create/read/update/delete workspaces via MCP tools or UI
+- Move specs between workspaces while preserving all version history
+- Filter specs by workspace for focused development
+- Visual workspace indicators with custom colors and icons
+- Automatic migration of existing specs to default "active" workspace
 
 ## 🛠️ MCP Tools
 
@@ -144,11 +176,24 @@ See `docs/voicenter-brand-colors.md` for details.
 
 ### UI REST API
 
-- `GET /api/specs` - List all specs
-- `GET /api/specs/:apiId` - Get spec details
-- `GET /api/specs/:apiId/versions` - List versions
-- `GET /api/specs/:apiId/versions/:version` - Get specific version
+#### Workspace/Folder Management
+- `GET /api/folders` - List all folders
+- `POST /api/folders` - Create new folder
+- `GET /api/folders/:folderName` - Get folder metadata
+- `PUT /api/folders/:folderName` - Update folder metadata
+- `DELETE /api/folders/:folderName` - Delete empty folder
+- `GET /api/folders/:folderName/specs` - List specs in folder
+- `POST /api/folders/:folderName/move-spec` - Move spec to different folder
+
+#### Spec Management
+- `GET /api/specs` - List all specs (across all folders)
+- `GET /api/specs/:apiId?folder=name` - Get spec details
+- `GET /api/specs/:apiId/versions?folder=name` - List versions
+- `GET /api/specs/:apiId/versions/:version?folder=name` - Get specific version
 - `PUT /api/specs/:apiId` - Update spec
+- `DELETE /api/specs/:apiId?folder=name` - Delete spec
+
+#### Audit & Stats
 - `GET /api/audit` - Get audit log
 - `GET /api/audit/:apiId` - Get API-specific audit log
 - `GET /api/stats` - Dashboard statistics
@@ -223,6 +268,8 @@ MIT
 - [x] OpenAPI viewer
 - [x] Version history
 - [x] Audit log
+- [x] Multi-workspace/folder organization
+- [x] LocalStorage workspace persistence
 - [ ] Authentication
 - [ ] Multi-user support
 - [ ] S3 storage backend
