@@ -16,6 +16,8 @@ import { VersionManager } from './services/version-manager.js'
 import { DiffCalculator } from './services/diff-calculator.js'
 import { ValidationService } from './services/validation-service.js'
 import { AuditLogger } from './services/audit-logger.js'
+import { CacheService } from './services/cache-service.js'
+import { MetricsService } from './services/metrics-service.js'
 import {
   SpecReadTool,
   SpecValidateTool,
@@ -30,10 +32,13 @@ import {
 } from './tools/index.js'
 import { logger } from './utils/logger.js'
 import fastifyStatic from '@fastify/static'
+import fastifyCompress from '@fastify/compress'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { FolderManager } from './services/folder-manager.js'
 import { migrateToFolders } from './utils/migrate-to-folders.js'
+import { createMetricsMiddleware } from './middleware/metrics.js'
+import { createTimeoutMiddleware } from './middleware/timeout.js'
 
 /**
  * Builds and configures the Fastify server
@@ -46,6 +51,29 @@ export async function buildServer() {
   const fastify = Fastify({
     logger: false, // We use our own Pino logger
     trustProxy: true,
+    requestTimeout: 30000, // 30 second timeout
+  })
+
+  // Initialize cache and metrics
+  const cacheService = new CacheService({
+    maxSize: 500,
+    ttl: 0, // No TTL - manual invalidation only
+  })
+  const metricsService = new MetricsService()
+
+  // Register compression
+  await fastify.register(fastifyCompress, {
+    global: true,
+    threshold: 1024, // Only compress responses > 1KB
+  })
+
+  // Register middleware
+  fastify.addHook('onRequest', createMetricsMiddleware(metricsService))
+  fastify.addHook('onRequest', createTimeoutMiddleware(30000))
+  
+  // Error tracking middleware
+  fastify.addHook('onError', async (request, _reply, error) => {
+    metricsService.recordException(error.name, request.url, error)
   })
 
   // Initialize storage
@@ -53,13 +81,13 @@ export async function buildServer() {
     basePath: config.DATA_DIR,
   })
 
-  // Initialize services
-  const specManager = new SpecManager(storage)
+  // Initialize services with cache
+  const specManager = new SpecManager(storage, 'active', cacheService)
   const versionManager = new VersionManager(storage)
   const diffCalculator = new DiffCalculator()
   const validationService = new ValidationService(specManager)
   const auditLogger = new AuditLogger(storage)
-  const folderManager = new FolderManager(storage)
+  const folderManager = new FolderManager(storage, cacheService)
 
   // Run migration on startup (idempotent - safe to run multiple times)
   // Run migration in the background to avoid blocking server startup
@@ -81,9 +109,16 @@ export async function buildServer() {
           logger.warn({ errors: migrationResults.errors }, 'Some specs failed to migrate')
         }
       }
+      
+      // Warm up cache after migration
+      logger.info('Starting cache warming')
+      return warmCache(folderManager, specManager, cacheService)
+    })
+    .then(() => {
+      logger.info('Cache warming completed')
     })
     .catch((error) => {
-      logger.error({ error }, 'Migration failed - folders may not work correctly')
+      logger.error({ error }, 'Migration or cache warming failed')
     })
 
   // Register tools
@@ -103,7 +138,29 @@ export async function buildServer() {
   const securityConfigureTool = new SecurityConfigureTool(specManager, auditLogger)
   const referencesManageTool = new ReferencesManageTool(specManager, auditLogger)
 
-  // Health check endpoint
+  // Health check endpoint (updated)
+  fastify.get('/api/health', async () => {
+    return {
+      status: 'ok',
+      version: '1.0.0',
+      timestamp: new Date().toISOString(),
+      tools: 10,
+      cache: {
+        size: cacheService.getStats().size,
+        hitRate: cacheService.getStats().hitRate,
+      },
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+    }
+  })
+
+  // Metrics endpoint (Prometheus format)
+  fastify.get('/api/metrics', async (_request, reply) => {
+    const metrics = await metricsService.getMetrics()
+    reply.type('text/plain').send(metrics)
+  })
+
+  // Legacy health endpoint (for backwards compatibility)
   fastify.get('/health', async () => {
     return {
       status: 'ok',
@@ -931,6 +988,36 @@ export async function buildServer() {
   })
 
   return fastify
+}
+
+/**
+ * Warms the cache with frequently accessed data
+ * @description Pre-loads critical data to ensure fast first requests
+ */
+async function warmCache(
+  folderManager: FolderManager,
+  _specManager: SpecManager,
+  cacheService: CacheService
+) {
+  try {
+    logger.info('Warming cache with critical data...')
+    
+    // Load folders list (this is the slowest query)
+    const folders = await folderManager.listFolders(true)
+    logger.info({ folderCount: folders.length }, 'Cached folders list')
+    
+    // For warm cache, just preload folder list - don't load all specs
+    // Specs will be cached on first access (stale-while-revalidate)
+    
+    const stats = cacheService.getStats()
+    logger.info(
+      { size: stats.size, hitRate: stats.hitRate },
+      'Cache warming complete'
+    )
+  } catch (error) {
+    logger.error({ error }, 'Cache warming failed')
+    throw error
+  }
 }
 
 /**

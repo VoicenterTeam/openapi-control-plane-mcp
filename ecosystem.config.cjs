@@ -16,13 +16,23 @@ module.exports = {
         NODE_ENV: 'development',
         PORT: 3001,
         HOST: '0.0.0.0',
-        DATA_DIR: './data'
+        DATA_DIR: './data',
+        // Cache configuration
+        CACHE_MAX_SIZE: '500',
+        // Metrics configuration
+        METRICS_ENABLED: 'true',
+        PM2_METRICS: 'true'
       },
       env_production: {
         NODE_ENV: 'production',
         PORT: 80,
         HOST: '0.0.0.0',
-        DATA_DIR: '/data'
+        DATA_DIR: '/data',
+        // Cache configuration (production)
+        CACHE_MAX_SIZE: '1000',
+        // Metrics configuration (production)
+        METRICS_ENABLED: 'true',
+        PM2_METRICS: 'true'
       },
       error_file: './logs/pm2-error.log',
       out_file: './logs/pm2-out.log',
@@ -37,6 +47,8 @@ module.exports = {
       wait_ready: true,
       // Health check
       instance_var: 'INSTANCE_ID',
+      // PM2 Metrics (io.js module)
+      pmx: true,
       // Graceful shutdown
       kill_timeout: 5000,
       listen_timeout: 3000,

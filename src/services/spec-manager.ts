@@ -20,6 +20,7 @@ import {
 } from '../types/openapi.js'
 import { createStorageError, StorageError, ToolError } from '../utils/errors.js'
 import { logger } from '../utils/logger.js'
+import { type CacheService } from './cache-service.js'
 
 /**
  * Spec Manager Service
@@ -27,9 +28,11 @@ import { logger } from '../utils/logger.js'
  */
 export class SpecManager {
   private defaultFolder: string = 'active'
+  private cache?: CacheService
 
-  constructor(private storage: BaseStorageProvider, defaultFolder: string = 'active') {
+  constructor(private storage: BaseStorageProvider, defaultFolder: string = 'active', cache?: CacheService) {
     this.defaultFolder = defaultFolder
+    this.cache = cache
   }
 
   /**
@@ -44,6 +47,20 @@ export class SpecManager {
    * Like opening a specific edition of a book from your library.
    */
   async loadSpec(apiId: ApiId, version: VersionTag, folder?: string): Promise<OpenAPIDocument> {
+    const cacheKey = `specs:${apiId}:${version}`
+    
+    // Use cache if available
+    if (this.cache) {
+      return this.cache.get(cacheKey, () => this.doLoadSpec(apiId, version, folder))
+    }
+    
+    return this.doLoadSpec(apiId, version, folder)
+  }
+
+  /**
+   * Internal spec loading logic (without cache)
+   */
+  private async doLoadSpec(apiId: ApiId, version: VersionTag, folder?: string): Promise<OpenAPIDocument> {
     // If folder not specified, find where the API lives
     const targetFolder = folder || await this.findApiFolder(apiId) || this.defaultFolder
     
@@ -117,6 +134,14 @@ export class SpecManager {
       // Save spec
       const content = format === 'yaml' ? yaml.dump(spec) : JSON.stringify(spec, null, 2)
       await this.storage.write(specPath, content)
+
+      // Invalidate cache
+      if (this.cache) {
+        this.cache.invalidate(`specs:${apiId}:*`)
+        this.cache.invalidate(`specs:list:*`)
+        this.cache.invalidate(`folders:${targetFolder}:count`)
+        this.cache.invalidate('stats:global')
+      }
 
       logger.info({ apiId, version, format, folder: targetFolder }, 'Spec saved successfully')
     } catch (error) {

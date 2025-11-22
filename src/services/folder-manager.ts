@@ -13,6 +13,7 @@ import type { FolderMetadata } from '../types/metadata.js'
 import type { BaseStorageProvider } from '../storage/base-storage-provider.js'
 import { logger } from '../utils/logger.js'
 import { createStorageError, createValidationError } from '../utils/errors.js'
+import { type CacheService } from './cache-service.js'
 
 /**
  * Folder Manager Service
@@ -21,14 +22,17 @@ import { createStorageError, createValidationError } from '../utils/errors.js'
 export class FolderManager {
   private storage: BaseStorageProvider
   private folderCache: Map<string, FolderMetadata> = new Map()
+  private cache?: CacheService
 
   /**
    * Creates a new folder manager
    * @param storage - Storage provider for folder metadata
+   * @param cache - Cache service
    * @description Initializes the folder management system
    */
-  constructor(storage: BaseStorageProvider) {
+  constructor(storage: BaseStorageProvider, cache?: CacheService) {
     this.storage = storage
+    this.cache = cache
   }
 
   /**
@@ -38,6 +42,19 @@ export class FolderManager {
    * @description Gets all the filing cabinets. Every single drawer label.
    */
   async listFolders(includeSpecCount = true): Promise<FolderMetadata[]> {
+    const cacheKey = 'folders:list'
+    
+    if (this.cache) {
+      return this.cache.get(cacheKey, () => this.doListFolders(includeSpecCount))
+    }
+    
+    return this.doListFolders(includeSpecCount)
+  }
+
+  /**
+   * Internal folder listing logic (without cache)
+   */
+  private async doListFolders(includeSpecCount = true): Promise<FolderMetadata[]> {
     try {
       // List all top-level directories
       const allItems = await this.storage.list('/')
@@ -120,6 +137,13 @@ export class FolderManager {
 
       // Update cache
       this.folderCache.set(name, folderMetadata)
+      
+      // Invalidate cache
+      if (this.cache) {
+        this.cache.invalidate('folders:list')
+        this.cache.invalidate(`folders:${name}:*`)
+        this.cache.invalidate('stats:global')
+      }
 
       logger.info({ name, metadata }, 'Folder created')
 
@@ -182,6 +206,12 @@ export class FolderManager {
 
       // Update cache
       this.folderCache.set(folderName, updated)
+      
+      // Invalidate cache
+      if (this.cache) {
+        this.cache.invalidate('folders:list')
+        this.cache.invalidate(`folders:${folderName}:*`)
+      }
 
       logger.info({ folderName, updates }, 'Folder metadata updated')
 
@@ -218,6 +248,13 @@ export class FolderManager {
 
       // Remove from cache
       this.folderCache.delete(folderName)
+      
+      // Invalidate cache
+      if (this.cache) {
+        this.cache.invalidate('folders:list')
+        this.cache.invalidate(`folders:${folderName}:*`)
+        this.cache.invalidate('stats:global')
+      }
 
       logger.warn({ folderName }, 'Folder deleted')
     } catch (error) {
@@ -304,6 +341,15 @@ export class FolderManager {
 
       // Move the entire API directory (all versions)
       await this.moveDirectory(sourcePath, targetPath)
+      
+      // Invalidate cache
+      if (this.cache) {
+        this.cache.invalidate('folders:list')
+        this.cache.invalidate(`folders:${fromFolder}:*`)
+        this.cache.invalidate(`folders:${toFolder}:*`)
+        this.cache.invalidate(`specs:${apiId}:*`)
+        this.cache.invalidate('stats:global')
+      }
 
       logger.info({ apiId, fromFolder, toFolder }, 'Spec moved between folders')
     } catch (error) {
@@ -343,6 +389,19 @@ export class FolderManager {
    * @description Counts the files in a drawer. Math time! 🔢
    */
   private async getSpecCount(folderName: string): Promise<number> {
+    const cacheKey = `folders:${folderName}:count`
+    
+    if (this.cache) {
+      return this.cache.get(cacheKey, () => this.doGetSpecCount(folderName))
+    }
+    
+    return this.doGetSpecCount(folderName)
+  }
+
+  /**
+   * Internal spec count logic (without cache)
+   */
+  private async doGetSpecCount(folderName: string): Promise<number> {
     try {
       const apiIds = await this.listSpecsInFolder(folderName)
       return apiIds.length
