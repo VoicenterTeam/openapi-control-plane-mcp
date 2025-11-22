@@ -62,27 +62,29 @@ export async function buildServer() {
   const folderManager = new FolderManager(storage)
 
   // Run migration on startup (idempotent - safe to run multiple times)
-  logger.info('Checking folder structure and running migration if needed')
-  try {
-    const migrationResults = await migrateToFolders(storage)
-    if (migrationResults.skipped) {
-      logger.info('Folder structure already exists, migration skipped')
-    } else {
-      logger.info(
-        {
-          specs_migrated: migrationResults.specs_migrated,
-          folders_created: migrationResults.folders_created,
-          errors: migrationResults.errors.length,
-        },
-        'Migration completed'
-      )
-      if (migrationResults.errors.length > 0) {
-        logger.warn({ errors: migrationResults.errors }, 'Some specs failed to migrate')
+  // Run migration in the background to avoid blocking server startup
+  logger.info('Starting folder structure check and migration (non-blocking)')
+  migrateToFolders(storage)
+    .then((migrationResults) => {
+      if (migrationResults.skipped) {
+        logger.info('Folder structure already exists, migration skipped')
+      } else {
+        logger.info(
+          {
+            specs_migrated: migrationResults.specs_migrated,
+            folders_created: migrationResults.folders_created,
+            errors: migrationResults.errors.length,
+          },
+          'Migration completed'
+        )
+        if (migrationResults.errors.length > 0) {
+          logger.warn({ errors: migrationResults.errors }, 'Some specs failed to migrate')
+        }
       }
-    }
-  } catch (error) {
-    logger.error({ error }, 'Migration failed - server will continue but folders may not work correctly')
-  }
+    })
+    .catch((error) => {
+      logger.error({ error }, 'Migration failed - folders may not work correctly')
+    })
 
   // Register tools
   const specReadTool = new SpecReadTool(specManager)
